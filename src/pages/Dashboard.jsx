@@ -479,7 +479,7 @@ const Dashboard = () => {
               WebkitTextFillColor: 'transparent',
               letterSpacing: '-0.5px'
             }}>
-              智慧資源監測中心
+              iRMC資源監測
             </h1>
             {!isOnline && (
               <span className="badge badge-warning" style={{ display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'none', padding: '2px 8px', fontSize: '0.7rem' }}>
