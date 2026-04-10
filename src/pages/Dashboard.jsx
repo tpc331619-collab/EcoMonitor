@@ -367,7 +367,7 @@ const Dashboard = () => {
         await navigator.share({
           files: [file],
           title: `${title} 監測狀態`,
-          text: `EcoMonitor ${title} 資源監測數據`
+          text: `Eco-M ${title} 資源監測數據`
         });
         return;
       }

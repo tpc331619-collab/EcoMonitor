@@ -44,8 +44,8 @@ export default defineConfig({
         ]
       },
       manifest: {
-        name: 'EcoMonitor 能源管理',
-        short_name: 'EcoMonitor',
+        name: 'Eco-M 能源管理',
+        short_name: 'Eco-M',
         description: '水電費與能源監控系統',
         theme_color: '#0f172a',
         background_color: '#0f172a',

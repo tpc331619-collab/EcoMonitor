@@ -9,7 +9,7 @@ const Sidebar = () => {
   return (
     <aside className="sidebar shadow-lg">
       <div className="logo" style={{ cursor: 'pointer' }}>
-        EcoMonitor
+        Eco-M
       </div>
       
       <nav className="sidebar-nav">
