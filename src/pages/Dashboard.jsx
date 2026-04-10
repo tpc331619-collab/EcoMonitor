@@ -495,7 +495,7 @@ const Dashboard = () => {
     <div className="fade-in">
       <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ flex: '1', minWidth: '300px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '1.2rem', flexWrap: 'wrap' }}>
             <h1 style={{ 
               margin: 0, 
               fontSize: '1.8rem', 
@@ -505,21 +505,21 @@ const Dashboard = () => {
               WebkitTextFillColor: 'transparent',
               letterSpacing: '-0.5px'
             }}>
-              iRMC資源監測
+              iRMC-資源監控
             </h1>
-            {!isOnline && (
-              <span className="badge badge-warning" style={{ display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'none', padding: '2px 8px', fontSize: '0.7rem' }}>
-                <WifiOff size={12} /> 離線中
-              </span>
-            )}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: 0.8 }}>
-              <WeatherIcon />
-              <span>{weather.desc} {weather.temp}°C</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: 0.8 }}>
+                <WeatherIcon />
+                <span>{weather.desc} {weather.temp}°C</span>
+              </div>
+              <span style={{ opacity: 0.3 }}>|</span>
+              <span>{format(new Date(), 'yyyy/MM/dd')}</span>
+              {!isOnline && (
+                <span className="badge badge-warning" style={{ display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'none', padding: '2px 8px', fontSize: '0.7rem', marginLeft: '5px' }}>
+                  <WifiOff size={12} /> 離線中
+                </span>
+              )}
             </div>
-            <span style={{ opacity: 0.3 }}>|</span>
-            <span>{format(new Date(), 'yyyy/MM/dd')}</span>
           </div>
         </div>
         {/* 頂級膠囊導航列 */}
