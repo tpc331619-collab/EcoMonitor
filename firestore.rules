@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 使用者資料 (需登入)
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (
+        request.auth.uid == userId || 
+        request.auth.token.email == 'b28803078@gmail.com'
+      );
+    }
+
+    // 資源紀錄與設定：採用最穩健的字串區間匹配
+    match /{col}/{doc} {
+      // 讀取權限 (Read/List)：放開給已登入用戶 或 符合資源路徑的訪客
+      allow read: if (request.auth != null) || 
+                  (col >= 'usage_records_' && col <= 'usage_records_~') || 
+                  (col >= 'settings_' && col <= 'settings_~') ||
+                  (col == 'usage_records') || 
+                  (col == 'settings');
+      
+      // 寫入權限 (Create/Update/Delete)：嚴格角色校驗
+      allow write: if request.auth != null && (
+        request.auth.token.email == 'b28803078@gmail.com' ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'user'
+          )
+        )
+      );
+    }
+  }
+}
