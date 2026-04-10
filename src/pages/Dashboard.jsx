@@ -264,42 +264,61 @@ const Dashboard = () => {
     const projected = dailyRate * daysTotal;
     const projectedPct = (projected / (limit || 1)) * 100;
     const remainingDays = Math.max(0, daysTotal - daysPassed);
+    
+    // 智能標竿計算：目前天數應該落在多少用量
+    const benchUsage = (limit / daysTotal) * daysPassed;
+    const paceRatio = used / (benchUsage || 1);
 
     if (type === 'electric') {
       const tempNum = parseFloat(weather.temp) || 0;
-      if (tempNum >= 28) {
-        return <span className="text-warning"><span className="dot dot-warning" /> 🔥 <b>高溫提示</b>：當前氣溫 {weather.temp}°C，預計空調負載將增加。建議調高 1°C 可節省約 6% 電量。</span>;
+      
+      // 異常偵測 (比預期進度快 25%)
+      if (paceRatio > 1.25) {
+        return <span className="text-error"><span className="dot dot-error" /> 🚨 <b>異常超標</b>：目前用量已超過進度標竿 {( (paceRatio - 1) * 100 ).toFixed(1)}%，請立即檢查高耗能設備。</span>;
       }
+      
+      if (tempNum >= 28) {
+        return <span className="text-warning"><span className="dot dot-warning" /> 🔥 <b>高溫提示</b>：氣溫 {weather.temp}°C，預計空調負載將增加。建議調高 1°C 可節省約 6% 電量。</span>;
+      }
+      
       if (projectedPct > 100) {
         const diff = projected - limit;
         const dailyReduction = diff / (remainingDays + 1);
-        return <span className="text-error"><span className="dot dot-error" /> 🔴 警示：按目前速度，月底預計耗用 {Math.round(projectedPct)}% ({Math.round(projected).toLocaleString()}度)。建議每日減用 {Math.round(dailyReduction).toLocaleString()}度以拉回目標</span>;
+        return <span className="text-error"><span className="dot dot-error" /> 🔴 警示：月底預計耗用 {Math.round(projectedPct)}%。建議每日減用 {Math.round(dailyReduction).toLocaleString()}度以拉回目標</span>;
       }
-      if (projectedPct >= 90) {
-        return <span className="text-warning"><span className="dot dot-warning" /> 🟡 提示：月底預期耗用將達 {Math.round(projectedPct)}%，接近上限，請密切注意高耗能設備</span>;
+      
+      if (paceRatio > 1.1) {
+        return <span className="text-warning"><span className="dot dot-warning" /> 🟡 <b>趨勢過快</b>：目前進度已超前 {Math.round((paceRatio-1)*100)}%，月底有超標風險。</span>;
       }
+
       if (projectedPct >= 75) {
-        return <span className="text-success"><span className="dot dot-success" /> 🟢 完美：預算利用率 {Math.round(projectedPct)}%，目前正穩定朝節能目標邁進！</span>;
+        return <span className="text-success"><span className="dot dot-success" /> 🟢 完美：目前進度穩定，預算利用率 {Math.round(projectedPct)}%。</span>;
       }
-      return <span className="text-info"><span className="dot dot-info" /> 🔵 空間：目前預算非常充裕，預計月底僅耗用 {Math.round(projectedPct)}%，尚有 {Math.round(limit - projected).toLocaleString()} 度空間</span>;
+      return <span className="text-info"><span className="dot dot-info" /> 🔵 空間：目前節能表現優異，尚有 {Math.round(limit - projected).toLocaleString()} 度預算空間</span>;
     }
 
     if (type === 'water') {
       if (weather.desc?.includes('雨') || parseInt(weather.pop) >= 60) {
-        return <span className="text-info"><span className="dot dot-info" /> 💧 <b>水源切換</b>：偵測到目前降雨充足，建議暫停自來水灌溉，優先消耗雨水回收槽。</span>;
+        return <span className="text-info"><span className="dot dot-info" /> 💧 <b>建議切換</b>：偵測到降雨機率高，建議優先使用雨水回收槽，節省自來水。</span>;
       }
+      
+      if (paceRatio > 1.25) {
+        return <span className="text-error"><span className="dot dot-error" /> 🚨 <b>用水異常</b>：目前累積進度嚴重超標，請檢查是否有管線漏水。</span>;
+      }
+
       if (projectedPct > 100) {
         const diff = projected - limit;
-        return <span className="text-error"><span className="dot dot-error" /> 🔴 警告：用水預計將超標！目前預估為 {Math.round(projectedPct)}% ({Math.round(projected).toLocaleString()}度)。建議每日節約 {Math.round(diff / (remainingDays + 1)).toLocaleString()}度</span>;
+        return <span className="text-error"><span className="dot dot-error" /> 🔴 警告：用水預計將超標！目前預估為 {Math.round(projectedPct)}%。</span>;
       }
-      if (projectedPct >= 90) {
-        return <span className="text-warning"><span className="dot dot-warning" /> 🟡 提示：月底配水預計達 {Math.round(projectedPct)}%，請留意洩漏或過度灌溉</span>;
+      
+      if (paceRatio > 1.1) {
+        return <span className="text-warning"><span className="dot dot-warning" /> 🟡 <b>提示</b>：用水進度略快，請留意過度灌溉或非必要消耗。</span>;
       }
+
       if (projectedPct >= 70) {
-        return <span className="text-success"><span className="dot dot-success" /> 🟢 穩定：用水狀況優異，利用率約 {Math.round(projectedPct)}%，請繼續保持</span>;
+        return <span className="text-success"><span className="dot dot-success" /> 🟢 穩定：用水進度控制良好，請繼續保持。</span>;
       }
-      const remainingSpace = limit - projected;
-      return <span className="text-info"><span className="dot dot-info" /> 🔵 備載：目前用水無虞，預計月底僅耗用 {Math.round(projectedPct)}%，距離上限空間極大</span>;
+      return <span className="text-info"><span className="dot dot-info" /> 🔵 備載：目前用水極度節省，餘額充裕。</span>;
     }
 
     if (type === 'rain') {
@@ -444,24 +463,11 @@ const Dashboard = () => {
   const isWaterExceeded = wProjected > wLimit;
   const isCarbonExceeded = carbonProjected > carbonBudget;
 
-  let statusLevel = 'success'; // success, warning, danger
-  if (isCarbonExceeded) {
-    statusLevel = 'danger';
-  } else if (isElectricExceeded || isWaterExceeded) {
-    statusLevel = 'warning';
-  }
+  const statusLevel = isCarbonExceeded ? 'danger' : (isElectricExceeded || isWaterExceeded ? 'warning' : 'success');
 
-  const getStatusColor = () => {
-    if (statusLevel === 'danger') return 'var(--color-error)';
-    if (statusLevel === 'warning') return '#f59e0b'; // Amber/Orange
-    return 'var(--color-success)';
-  };
-
-  const getStatusBg = () => {
-    if (statusLevel === 'danger') return 'radial-gradient(circle, rgba(239, 68, 68, 0.15) 0%, transparent 70%)';
-    if (statusLevel === 'warning') return 'radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, transparent 70%)';
-    return 'radial-gradient(circle, rgba(34, 197, 94, 0.15) 0%, transparent 70%)';
-  };
+  // 計算標竿進度數據
+  const ePace = currentUsage.electric / ((eLimit / daysTotal) * daysPassed || 1);
+  const wPace = currentUsage.water / ((wLimit / daysTotal) * daysPassed || 1);
 
   if (loading) return <div className="loader-container"><div className="spinner"></div></div>;
 
@@ -594,7 +600,11 @@ const Dashboard = () => {
 
 
       <div className="metric-grid">
-        <div className="glass-panel metric-card" ref={electricCardRef} style={{ borderColor: electricPct >= 90 ? 'var(--color-error)' : 'var(--panel-border)' }}>
+        <div className="glass-panel metric-card" ref={electricCardRef} style={{ 
+          borderColor: ePace >= 1.25 ? 'var(--color-error)' : (ePace >= 1.1 ? 'var(--color-warning)' : 'var(--panel-border)'),
+          boxShadow: ePace >= 1.25 ? '0 0 20px rgba(239, 68, 68, 0.2)' : 'none',
+          animation: ePace >= 1.25 ? 'pulse-red 2s infinite' : 'none'
+        }}>
           <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 className="metric-title" style={{ margin: 0 }}><Zap className="text-electric" /> {currentMonthStr.replace('-', '/')} 月份累計用電量</h3>
             <div style={{ display: 'flex', gap: '0.8rem' }}>
@@ -608,12 +618,24 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-          <div className="metric-value text-electric"><span style={{ fontSize: '3rem' }}>{Math.round(currentUsage.electric).toLocaleString()}</span><span className="metric-unit">/ {limits.electric.toLocaleString()} 度</span></div>
+          <div className="metric-value text-electric">
+            <span style={{ fontSize: '3rem' }}>{Math.round(currentUsage.electric).toLocaleString()}</span>
+            <span className="metric-unit">/ {limits.electric.toLocaleString()} 度</span>
+          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between' }}>
+            <span>進度標竿: {Math.round((limits.electric / daysTotal) * daysPassed).toLocaleString()} 度</span>
+            <span style={{ color: ePace > 1 ? 'var(--color-error)' : 'var(--color-success)' }}>
+              {ePace > 1 ? `超標 ${Math.round((ePace - 1) * 100)}%` : '符合預期'}
+            </span>
+          </div>
           <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto' }}>{getAITip('electric', currentUsage.electric, limits.electric)}</div>
           <div className="progress-container"><div className="progress-bar" style={{ width: `${electricPct}%`, backgroundColor: electricPct >= 90 ? 'var(--color-error)' : 'var(--color-electric)' }} /></div>
         </div>
 
-        <div className="glass-panel metric-card" ref={waterCardRef} style={{ borderColor: waterPct >= 90 ? 'var(--color-error)' : 'var(--panel-border)' }}>
+        <div className="glass-panel metric-card" ref={waterCardRef} style={{ 
+          borderColor: wPace >= 1.25 ? 'var(--color-error)' : (wPace >= 1.1 ? 'var(--color-warning)' : 'var(--panel-border)'),
+          boxShadow: wPace >= 1.25 ? '0 0 20px rgba(239, 68, 68, 0.2)' : 'none'
+        }}>
           <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 className="metric-title" style={{ margin: 0 }}><Droplet className="text-water" /> {currentMonthStr.replace('-', '/')} 月份累計用水量</h3>
             <div style={{ display: 'flex', gap: '0.8rem' }}>
@@ -624,7 +646,16 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-          <div className="metric-value text-water"><span style={{ fontSize: '3rem' }}>{Math.round(currentUsage.water).toLocaleString()}</span><span className="metric-unit">/ {limits.water.toLocaleString()} 度</span></div>
+          <div className="metric-value text-water">
+            <span style={{ fontSize: '3rem' }}>{Math.round(currentUsage.water).toLocaleString()}</span>
+            <span className="metric-unit">/ {limits.water.toLocaleString()} 度</span>
+          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between' }}>
+            <span>進度標竿: {Math.round((limits.water / daysTotal) * daysPassed).toLocaleString()} 度</span>
+            <span style={{ color: wPace > 1 ? 'var(--color-error)' : 'var(--color-success)' }}>
+              {wPace > 1 ? `超標 ${Math.round((wPace - 1) * 100)}%` : '符合預期'}
+            </span>
+          </div>
           <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto' }}>{getAITip('water', currentUsage.water, limits.water)}</div>
           <div className="progress-container"><div className="progress-bar" style={{ width: `${waterPct}%`, backgroundColor: waterPct >= 90 ? 'var(--color-error)' : 'var(--color-water)' }} /></div>
         </div>
