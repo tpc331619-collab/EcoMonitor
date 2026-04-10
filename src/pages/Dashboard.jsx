@@ -265,8 +265,10 @@ const Dashboard = () => {
     const projectedPct = (projected / (limit || 1)) * 100;
     const remainingDays = Math.max(0, daysTotal - daysPassed);
     
-    // 智能標竿計算：目前天數應該落在多少用量
-    const benchUsage = (limit / daysTotal) * daysPassed;
+    // 💡 智能標竿計算：改為「週標竿」，每 7 天為一階
+    const currentWeek = Math.ceil(daysPassed / 7);
+    const benchDays = Math.min(daysTotal, currentWeek * 7);
+    const benchUsage = (limit / daysTotal) * benchDays;
     const paceRatio = used / (benchUsage || 1);
 
     if (type === 'electric') {
@@ -465,9 +467,27 @@ const Dashboard = () => {
 
   const statusLevel = isCarbonExceeded ? 'danger' : (isElectricExceeded || isWaterExceeded ? 'warning' : 'success');
 
-  // 計算標竿進度數據
-  const ePace = currentUsage.electric / ((eLimit / daysTotal) * daysPassed || 1);
-  const wPace = currentUsage.water / ((wLimit / daysTotal) * daysPassed || 1);
+  const getStatusColor = () => {
+    if (statusLevel === 'danger') return 'var(--color-error)';
+    if (statusLevel === 'warning') return '#f59e0b';
+    return 'var(--color-success)';
+  };
+
+  const getStatusBg = () => {
+    if (statusLevel === 'danger') return 'radial-gradient(circle, rgba(239, 68, 68, 0.15) 0%, transparent 70%)';
+    if (statusLevel === 'warning') return 'radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, transparent 70%)';
+    return 'radial-gradient(circle, rgba(34, 197, 94, 0.15) 0%, transparent 70%)';
+  };
+
+  // 💡 週標竿邏輯：每 7 天為一個里程碑
+  const currentWeek = Math.ceil(daysPassed / 7);
+  const benchDays = Math.min(daysTotal, currentWeek * 7);
+  const eBench = (eLimit / daysTotal) * benchDays;
+  const wBench = (wLimit / daysTotal) * benchDays;
+  
+  // 計算 Pace (改為對比週標竿)
+  const ePace = currentUsage.electric / (eBench || 1);
+  const wPace = currentUsage.water / (wBench || 1);
 
   if (loading) return <div className="loader-container"><div className="spinner"></div></div>;
 
@@ -623,9 +643,9 @@ const Dashboard = () => {
             <span className="metric-unit">/ {limits.electric.toLocaleString()} 度</span>
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between' }}>
-            <span>進度標竿: {Math.round((limits.electric / daysTotal) * daysPassed).toLocaleString()} 度</span>
+            <span>本週預算 (第 {currentWeek} 週): {Math.round(eBench).toLocaleString()} 度</span>
             <span style={{ color: ePace > 1 ? 'var(--color-error)' : 'var(--color-success)' }}>
-              {ePace > 1 ? `超標 ${Math.round((ePace - 1) * 100)}%` : '符合預期'}
+              {ePace > 1 ? `超支 ${Math.round((ePace - 1) * 100)}%` : '進度正常'}
             </span>
           </div>
           <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto' }}>{getAITip('electric', currentUsage.electric, limits.electric)}</div>
@@ -651,9 +671,9 @@ const Dashboard = () => {
             <span className="metric-unit">/ {limits.water.toLocaleString()} 度</span>
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between' }}>
-            <span>進度標竿: {Math.round((limits.water / daysTotal) * daysPassed).toLocaleString()} 度</span>
+            <span>本週預算 (第 {currentWeek} 週): {Math.round(wBench).toLocaleString()} 度</span>
             <span style={{ color: wPace > 1 ? 'var(--color-error)' : 'var(--color-success)' }}>
-              {wPace > 1 ? `超標 ${Math.round((wPace - 1) * 100)}%` : '符合預期'}
+              {wPace > 1 ? `超支 ${Math.round((wPace - 1) * 100)}%` : '進度正常'}
             </span>
           </div>
           <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto' }}>{getAITip('water', currentUsage.water, limits.water)}</div>
