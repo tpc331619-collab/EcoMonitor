@@ -549,7 +549,6 @@ const Dashboard = () => {
 
           {/* 月份選擇視窗 (隱形觸發器) */}
           <div 
-            onClick={() => monthInputRef.current?.showPicker()}
             style={{ position: 'relative', display: 'flex', alignItems: 'center', padding: '0 12px', gap: '8px', cursor: 'pointer' }}
           >
             <span style={{ 
@@ -574,7 +573,8 @@ const Dashboard = () => {
               }}
               style={{ 
                 position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                opacity: 0, pointerEvents: 'none',
+                opacity: 0, cursor: 'pointer',
+                zIndex: 2,
                 appearance: 'none', WebkitAppearance: 'none'
               }}
             />
