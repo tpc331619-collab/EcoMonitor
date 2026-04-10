@@ -332,6 +332,28 @@ const Dashboard = () => {
 
   const handleCopyCardImage = async (ref, title) => {
     if (!ref.current) return;
+
+    // 檢查瀏覽器是否支援圖片剪貼簿 (iOS 14.7+ 與現代瀏覽器支持)
+    const canCopyImage = window.ClipboardItem && navigator.clipboard?.write;
+
+    if (canCopyImage) {
+      try {
+        // ✨ 專業技巧：在 iOS Safari 必須同步建立項並傳入 Promise，否則會被安全性攔截
+        const item = new ClipboardItem({
+          'image/png': toBlob(ref.current, {
+            backgroundColor: '#0f172a',
+            style: { borderRadius: '12px' }
+          })
+        });
+
+        await navigator.clipboard.write([item]);
+        alert(`${title} 圖片已複製！現在可以去 LINE 貼上了。`);
+        return;
+      } catch (err) {
+        console.error('剪貼簿寫入失敗，切換至分享模式:', err);
+      }
+    }
+
     try {
       const blob = await toBlob(ref.current, {
         backgroundColor: '#0f172a',
@@ -340,7 +362,7 @@ const Dashboard = () => {
 
       const file = new File([blob], `${title}_status.png`, { type: 'image/png' });
 
-      // 1. 優先嘗試行動裝置原生分享 (Web Share API)
+      // 1. 嘗試預備分享 (原生分享介面)
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
@@ -350,32 +372,20 @@ const Dashboard = () => {
         return;
       }
 
-      // 2. 嘗試寫入剪貼簿 (針對桌面端與支援的瀏覽器)
-      if (navigator.clipboard && window.ClipboardItem) {
-        const item = new ClipboardItem({ 'image/png': blob });
-        await navigator.clipboard.write([item]);
-        alert(`${title} 圖片已複製到剪貼簿！`);
-      } else {
-        throw new Error('Clipboard API not available');
-      }
+      // 2. 萬不得已才用下載 (相容性最強)
+      const dataUrl = await toPng(ref.current, {
+        backgroundColor: '#0f172a',
+        style: { borderRadius: '12px' }
+      });
+      const link = document.createElement('a');
+      link.download = `${title}_${format(new Date(), 'MMdd')}.png`;
+      link.href = dataUrl;
+      link.click();
+      alert('由於瀏覽器限制，已改為下載圖片至您的裝置。');
 
     } catch (err) {
-      console.error('複製/分享失敗:', err);
-      
-      // 3. 最後防線：自動轉為下載圖片 (相容性最強)
-      try {
-        const dataUrl = await toPng(ref.current, {
-          backgroundColor: '#0f172a',
-          style: { borderRadius: '12px' }
-        });
-        const link = document.createElement('a');
-        link.download = `${title}_${format(new Date(), 'MMdd')}.png`;
-        link.href = dataUrl;
-        link.click();
-        alert('由於瀏覽器限制，已自動下載圖片至您的裝置。');
-      } catch (downErr) {
-        alert('目前瀏覽器不支持此功能，請手動擷取螢幕畫面。');
-      }
+      console.error('操作失敗:', err);
+      alert('目前瀏覽器不支持此功能，請手動擷取螢幕畫面。');
     }
   };
 
