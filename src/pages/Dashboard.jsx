@@ -468,22 +468,32 @@ const Dashboard = () => {
   return (
     <div className="fade-in">
       <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <h1 style={{ margin: 0, fontSize: '2.2rem' }}>智慧資源監測中心</h1>
+        <div style={{ flex: '1', minWidth: '300px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+            <h1 style={{ 
+              margin: 0, 
+              fontSize: '1.8rem', 
+              fontWeight: '800',
+              background: 'linear-gradient(to bottom, #ffffff, #94a3b8)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              letterSpacing: '-0.5px'
+            }}>
+              智慧資源監測中心
+            </h1>
             {!isOnline && (
-              <span className="badge badge-warning" style={{ display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'none' }}>
-                <WifiOff size={14} /> 離線填寫模式
+              <span className="badge badge-warning" style={{ display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'none', padding: '2px 8px', fontSize: '0.7rem' }}>
+                <WifiOff size={12} /> 離線中
               </span>
             )}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '8px', color: 'var(--text-muted)', fontSize: '0.95rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', padding: '4px 12px', borderRadius: '20px', color: '#fbbf24' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: 0.8 }}>
               <WeatherIcon />
-              <span>桃園觀音 {weather.desc} {weather.temp}°C (降雨率 {weather.pop}%)</span>
+              <span>{weather.desc} {weather.temp}°C</span>
             </div>
-            <span>|</span>
-            <span>今日日期：{format(new Date(), 'yyyy/MM/dd')}</span>
+            <span style={{ opacity: 0.3 }}>|</span>
+            <span>{format(new Date(), 'yyyy/MM/dd')}</span>
           </div>
         </div>
         {/* 頂級膠囊導航列 */}
@@ -582,81 +592,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="glass-panel" style={{
-        marginBottom: '2rem',
-        padding: '1.5rem 2rem',
-        background: 'linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02))',
-        border: `1px solid ${statusLevel === 'success' ? 'rgba(255,255,255,0.05)' : getStatusColor()}`,
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        <div style={{
-          position: 'absolute',
-          top: '-50px',
-          right: '-50px',
-          width: '200px',
-          height: '200px',
-          background: getStatusBg(),
-          zIndex: 0
-        }} />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1, flexWrap: 'wrap', gap: '1.5rem' }}>
-          {/* 左側：核心 KPI - 碳排量餘額 */}
-          <div style={{ flex: 1, minWidth: '220px' }}>
-            <div style={{ color: getStatusColor(), fontSize: '0.85rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}>
-              <div style={{
-                width: '10px',
-                height: '10px',
-                borderRadius: '50%',
-                background: getStatusColor(),
-                boxShadow: `0 0 10px ${getStatusColor()}`,
-                animation: 'pulse 2s infinite'
-              }}></div>
-              碳排量餘額
-            </div>
-            <div style={{ fontSize: '2.5rem', fontWeight: 900, color: getStatusColor() }}>
-              {isCarbonExceeded ? (Math.abs(carbonBudget - carbonProjected).toLocaleString()) : (carbonBudget - carbonProjected).toLocaleString()} <span style={{ fontSize: '1.2rem' }}>kg</span>
-            </div>
-          </div>
-
-          {/* 中央：推算數據 - 月底預計排放 */}
-          <div style={{ flex: 1, minWidth: '250px', textAlign: 'center' }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-              照目前用量，月底預計排放
-            </div>
-            <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--text-main)' }}>
-              {carbonProjected.toLocaleString()} <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>kg</span>
-            </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.8rem' }}>
-              標竿：減量 {carbonGoals.reductionTarget}% | 總量上限：{carbonBudget.toLocaleString()} kg | 排放係數：{emissionFactor}
-            </div>
-          </div>
-
-          {/* 右側：環境貢獻狀態 */}
-          <div style={{ flex: 1, minWidth: '200px', textAlign: 'right' }}>
-            <div style={{ color: getStatusColor(), fontSize: '0.85rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
-              {statusLevel === 'success' ? <Sparkles size={14} /> : <CloudOff size={14} />} 環境貢獻狀態
-            </div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: getStatusColor() }}>
-              {isCarbonExceeded ? '碳排減量失敗' :
-                (statusLevel === 'warning' ? '節能目標受阻' :
-                  `相當於種植 ${Math.max(0, Math.round((carbonBudget - carbonProjected) / 1.0))} 棵大樹`)}
-            </div>
-          </div>
-        </div>
-
-        {/* 底部的進度條 */}
-        <div style={{ marginTop: '1.5rem', background: 'rgba(255,255,255,0.03)', height: '6px', borderRadius: '3px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            height: '100%',
-            width: `${Math.min(100, (carbonProjected / (carbonBudget || 1)) * 100)}%`,
-            background: getStatusColor(),
-            transition: 'width 1s ease-out'
-          }} />
-        </div>
-      </div>
 
       <div className="metric-grid">
         <div className="glass-panel metric-card" ref={electricCardRef} style={{ borderColor: electricPct >= 90 ? 'var(--color-error)' : 'var(--panel-border)' }}>
@@ -704,6 +639,56 @@ const Dashboard = () => {
           </div>
           <div className="metric-value text-rain"><span style={{ fontSize: '3rem' }}>{Math.round(currentUsage.rain).toLocaleString()}</span><span className="metric-unit">度</span></div>
           <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto' }}>{getAITip('rain', currentUsage.rain, 1000)}</div>
+        </div>
+
+        {/* 碳排量指標卡 (環境貢獻總結) */}
+        <div className="glass-panel metric-card" style={{ 
+          borderColor: isCarbonExceeded ? 'var(--color-error)' : 'var(--panel-border)',
+          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.8))',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <div style={{
+            position: 'absolute',
+            bottom: '-20px',
+            right: '-20px',
+            width: '100px',
+            height: '100px',
+            background: getStatusBg(),
+            zIndex: 0,
+            opacity: 0.5
+          }} />
+          <div className="metric-header" style={{ position: 'relative', zIndex: 1 }}>
+            <h3 className="metric-title" style={{ margin: 0, color: getStatusColor() }}>
+              <Sparkles size={18} /> {currentMonthStr.replace('-', '/')} 碳排量餘額
+            </h3>
+          </div>
+          <div className="metric-value" style={{ color: getStatusColor(), position: 'relative', zIndex: 1 }}>
+            <span style={{ fontSize: '3rem' }}>
+              {isCarbonExceeded ? (Math.abs(carbonBudget - carbonProjected).toLocaleString()) : (carbonBudget - carbonProjected).toLocaleString()}
+            </span>
+            <span className="metric-unit">kg</span>
+          </div>
+          
+          <div style={{ marginTop: 'auto', position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
+              <span>月預計: {carbonProjected.toLocaleString()} kg</span>
+              <span>目標: {carbonBudget.toLocaleString()} kg</span>
+            </div>
+            <div className="progress-container" style={{ height: '6px' }}>
+              <div className="progress-bar" style={{ 
+                width: `${Math.min(100, (carbonProjected / (carbonBudget || 1)) * 100)}%`, 
+                backgroundColor: getStatusColor() 
+              }} />
+            </div>
+            <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, color: getStatusColor() }}>
+              {isCarbonExceeded ? (
+                <><CloudOff size={14} /> 減量目標未達成</>
+              ) : (
+                <><TrendingDown size={14} /> 救了 {Math.max(0, Math.round((carbonBudget - carbonProjected) / 1.0))} 棵大樹</>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
