@@ -4,7 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/EcoMonitor/',
+  base: process.env.GITHUB_ACTIONS ? '/EcoMonitor/' : '/',
   plugins: [
     react(),
     VitePWA({
