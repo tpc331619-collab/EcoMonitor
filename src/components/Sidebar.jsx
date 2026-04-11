@@ -35,7 +35,9 @@ const Sidebar = () => {
       <div className="sidebar-footer">
         <div style={{ padding: '0 0.5rem', fontSize: '0.85rem', color: 'var(--text-main)', textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '2px' }}>
           <div style={{ fontWeight: 'bold' }}>{user?.displayName || '使用者'}</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{role === 'admin' ? '系統管理員' : '一般用戶'}</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+            {role === 'admin' ? '系統管理員' : role === 'guest' ? '訪客模式' : '一般用戶'}
+          </div>
         </div>
         <button onClick={logout} className="btn btn-secondary" style={{ padding: '0.5rem', minWidth: 'auto', borderRadius: '50%', width: '36px', height: '36px' }} title="登出系統">
           <LogOut size={16} className="text-error" />

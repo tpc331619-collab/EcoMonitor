@@ -403,15 +403,15 @@ const Dashboard = () => {
             <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto' }}>本日降雨機率適中，系統持續回收。</div>
           </div>
 
-          <div className="glass-panel metric-card carbon-card-full" style={{ background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(26, 28, 35, 0.85) 100%)', borderColor: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', display: 'flex', boxShadow: `0 0 20px ${isCarbonExceeded ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.05)'}` }}>
-            <div className="carbon-main-info" style={{ flex: '0 0 300px' }}>
+          <div className="glass-panel metric-card carbon-card-full" style={{ borderColor: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', boxShadow: `0 0 20px ${isCarbonExceeded ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.05)'}` }}>
+            <div className="carbon-main-info">
               <h3 style={{ margin: 0, color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '10px' }}><Globe size={20} /> 碳排量餘額</h3>
               <div className="metric-value" style={{ color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', margin: '1rem 0' }}>
                 <span style={{ fontSize: '3.5rem', fontWeight: 800 }}>{Math.abs(carbonBudget - carbonProjected).toLocaleString()}</span>
                 <span className="metric-unit" style={{ marginLeft: '10px' }}>kg CO2e</span>
               </div>
             </div>
-            <div className="carbon-detail-info" style={{ flex: '1', paddingLeft: '2rem', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="carbon-detail-info">
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.9rem' }}>
                 <span>目標: {carbonBudget.toLocaleString()} kg</span>
                 <span style={{ color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)' }}>預計達成: {Math.round((carbonProjected/carbonBudget)*100)}%</span>
