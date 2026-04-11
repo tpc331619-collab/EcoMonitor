@@ -117,24 +117,24 @@ const HistoryPage = () => {
   return (
     <>
       <div className="fade-in">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <h1 style={{ margin: 0 }}>歷史紀錄查詢</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <h1 style={{ margin: 0, fontSize: 'clamp(1.2rem, 5vw, 2rem)', whiteSpace: 'nowrap' }}>歷史紀錄查詢</h1>
           
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.1)', border: '1px solid var(--panel-border)', borderRadius: '8px', padding: '0 1rem' }}>
-              <Calendar size={18} style={{ marginRight: '0.5rem', color: 'var(--text-muted)' }} />
+          <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.1)', border: '1px solid var(--panel-border)', borderRadius: '8px', padding: '0 0.8rem' }}>
+              <Calendar size={16} style={{ marginRight: '0.5rem', color: 'var(--text-muted)' }} />
               <select 
                 value={selectedYear} 
                 onChange={(e) => setSelectedYear(e.target.value)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-main)', padding: '0.5rem 0', outline: 'none', cursor: 'pointer', fontSize: '1rem', appearance: 'none', paddingRight: '1.5rem' }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-main)', padding: '0.5rem 0', outline: 'none', cursor: 'pointer', fontSize: '0.9rem', appearance: 'none', paddingRight: '1.2rem' }}
               >
                 {years.map(y => <option key={y} value={y} style={{ background: '#1e293b' }}>{y} 年度</option>)}
               </select>
-              <ChevronDown size={14} style={{ position: 'absolute', right: '10px', pointerEvents: 'none', color: 'var(--text-muted)' }} />
+              <ChevronDown size={14} style={{ position: 'absolute', right: '6px', pointerEvents: 'none', color: 'var(--text-muted)' }} />
             </div>
 
-            <button onClick={handleExportExcel} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Download size={18} /> 匯出年度 Excel
+            <button onClick={handleExportExcel} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', padding: '0.5rem 0.8rem' }}>
+              <Download size={16} /> 匯出年度 Excel
             </button>
           </div>
         </div>
@@ -159,11 +159,11 @@ const HistoryPage = () => {
                     onClick={() => toggleMonth(month)}
                     style={{ padding: '1.5rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: isExpanded ? 'rgba(255,255,255,0.05)' : 'transparent' }}
                   >
-                    <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      {isExpanded ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
+                    <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.8rem', fontSize: 'clamp(1rem, 4vw, 1.25rem)' }}>
+                      {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                       {month} 紀錄明細
                     </h2>
-                    <span style={{ color: 'var(--text-muted)' }}>共 {list.length} 筆筆數</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>共 {list.length} 筆紀錄</span>
                   </div>
 
                   {isExpanded && (

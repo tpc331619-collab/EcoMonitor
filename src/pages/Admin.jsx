@@ -43,37 +43,39 @@ const Admin = () => {
       
       <div className="glass-panel" style={{ marginBottom: '2rem' }}>
         <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Users size={24} className="text-water" /> 權限審核</h2>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', marginTop: '1rem' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid var(--panel-border)' }}>
-              <th style={{ padding: '1rem' }}>Email</th>
-              <th style={{ padding: '1rem' }}>名稱</th>
-              <th style={{ padding: '1rem' }}>當前權限</th>
-              <th style={{ padding: '1rem' }}>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map(u => (
-              <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                <td style={{ padding: '1rem' }}>{u.email}</td>
-                <td style={{ padding: '1rem' }}>{u.displayName}</td>
-                <td style={{ padding: '1rem' }}>
-                  <span className={`badge ${u.role === 'admin' ? 'badge-info' : u.role === 'user' ? 'badge-success' : 'badge-warning'}`}>
-                    {u.role === 'pending' ? '待審核' : u.role}
-                  </span>
-                </td>
-                <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem' }}>
-                  {u.role !== 'admin' && (
-                     <button onClick={() => updateUserRole(u.id, 'admin')} className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>設為 Admin</button>
-                  )}
-                  {u.role !== 'user' && (
-                    <button onClick={() => updateUserRole(u.id, 'user')} className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>核准為 User</button>
-                  )}
-                </td>
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', marginTop: '1rem' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--panel-border)' }}>
+                <th style={{ padding: '1rem' }}>Email</th>
+                <th style={{ padding: '1rem' }}>名稱</th>
+                <th style={{ padding: '1rem' }}>當前權限</th>
+                <th style={{ padding: '1rem' }}>操作</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {users.map(u => (
+                <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <td style={{ padding: '1rem', whiteSpace: 'nowrap' }}>{u.email}</td>
+                  <td style={{ padding: '1rem', whiteSpace: 'nowrap' }}>{u.displayName}</td>
+                  <td style={{ padding: '1rem' }}>
+                    <span className={`badge ${u.role === 'admin' ? 'badge-info' : u.role === 'user' ? 'badge-success' : 'badge-warning'}`}>
+                      {u.role === 'pending' ? '待審核' : u.role.toUpperCase()}
+                    </span>
+                  </td>
+                  <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem', whiteSpace: 'nowrap' }}>
+                    {u.role !== 'admin' && (
+                       <button onClick={() => updateUserRole(u.id, 'admin')} className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>設為 Admin</button>
+                    )}
+                    {u.role !== 'user' && (
+                      <button onClick={() => updateUserRole(u.id, 'user')} className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>核准為 User</button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

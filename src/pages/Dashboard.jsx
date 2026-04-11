@@ -368,8 +368,8 @@ const Dashboard = () => {
         <div className="metric-grid">
           <div className="glass-panel metric-card" ref={electricCardRef}>
             <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 className="text-electric" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Zap size={20} /> {currentMonthStr.replace('-', '/')} 累積用電量
+              <h3 className="text-electric" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px', fontSize: 'clamp(0.9rem, 4vw, 1.1rem)' }}>
+                <Zap size={18} /> {currentMonthStr.replace('-', '/')} 累積用電量
               </h3>
               <div className="card-actions" style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => handleCopyCardImage(electricCardRef, '用電')} className="card-action"><Camera size={16} /></button>
@@ -403,8 +403,8 @@ const Dashboard = () => {
 
           <div className="glass-panel metric-card" ref={waterCardRef}>
             <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 className="text-water" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Droplet size={20} /> {currentMonthStr.replace('-', '/')} 累積用水量
+              <h3 className="text-water" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px', fontSize: 'clamp(0.9rem, 4vw, 1.1rem)' }}>
+                <Droplet size={18} /> {currentMonthStr.replace('-', '/')} 累積用水量
               </h3>
               <div className="card-actions" style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => handleCopyCardImage(waterCardRef, '用水')} className="card-action"><Camera size={16} /></button>
@@ -437,8 +437,8 @@ const Dashboard = () => {
 
           <div className="glass-panel metric-card" ref={rainCardRef}>
             <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 className="text-rain" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CloudRain size={20} /> {currentMonthStr.replace('-', '/')} 累積雨水回收量
+              <h3 className="text-rain" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px', fontSize: 'clamp(0.9rem, 4vw, 1.1rem)' }}>
+                <CloudRain size={18} /> {currentMonthStr.replace('-', '/')} 累積雨水回收量
               </h3>
               <div className="card-actions" style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => handleCopyCardImage(rainCardRef, '雨水')} className="card-action"><Camera size={16} /></button>
@@ -522,30 +522,30 @@ const Dashboard = () => {
                                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', minWidth: '800px' }}>
                                     <thead>
                                       <tr style={{ borderBottom: '1px solid var(--panel-border)', color: 'var(--text-muted)' }}>
-                                        <th style={{ padding: '0.8rem' }}>日期</th>
-                                        <th style={{ padding: '0.8rem' }}>辦公大樓</th>
-                                        <th style={{ padding: '0.8rem' }}>倉儲大樓</th>
-                                        <th style={{ padding: '0.8rem' }}>低壓用電</th>
-                                        <th style={{ padding: '0.8rem' }}>1-1</th>
-                                        <th style={{ padding: '0.8rem' }}>1-2</th>
-                                        <th style={{ padding: '0.8rem' }}>1-3</th>
-                                        <th style={{ padding: '0.8rem' }}>2-1</th>
-                                        <th style={{ padding: '0.8rem' }}>AGV</th>
+                                        <th style={{ padding: '0.8rem', textAlign: 'center' }}>日期</th>
+                                        <th style={{ padding: '0.8rem', textAlign: 'center' }}>辦公大樓</th>
+                                        <th style={{ padding: '0.8rem', textAlign: 'center' }}>倉儲大樓</th>
+                                        <th style={{ padding: '0.8rem', textAlign: 'center' }}>低壓用電</th>
+                                        <th style={{ padding: '0.8rem', textAlign: 'center' }}>1-1</th>
+                                        <th style={{ padding: '0.8rem', textAlign: 'center' }}>1-2</th>
+                                        <th style={{ padding: '0.8rem', textAlign: 'center' }}>1-3</th>
+                                        <th style={{ padding: '0.8rem', textAlign: 'center' }}>2-1</th>
+                                        <th style={{ padding: '0.8rem', textAlign: 'center' }}>AGV</th>
                                         <th style={{ padding: '0.8rem', textAlign: 'right' }}>操作</th>
                                       </tr>
                                     </thead>
                                     <tbody>
                                       {electrics.map(r => (
                                         <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                          <td style={{ padding: '0.8rem' }}>{format(new Date(r.date), 'MM/dd')}</td>
-                                          <td style={{ padding: '0.8rem' }}>{r.readings?.ml?.toLocaleString()}</td>
-                                          <td style={{ padding: '0.8rem' }}>{r.readings?.mp1?.toLocaleString()}</td>
-                                          <td style={{ padding: '0.8rem' }}>{r.readings?.mp?.toLocaleString()}</td>
-                                          <td style={{ padding: '0.8rem' }}>{r.readings?.kwh11?.toLocaleString()}</td>
-                                          <td style={{ padding: '0.8rem' }}>{r.readings?.kwh12?.toLocaleString()}</td>
-                                          <td style={{ padding: '0.8rem' }}>{r.readings?.kwh13?.toLocaleString()}</td>
-                                          <td style={{ padding: '0.8rem' }}>{r.readings?.kwh21?.toLocaleString()}</td>
-                                          <td style={{ padding: '0.8rem' }}>{r.readings?.agv?.toLocaleString()}</td>
+                                          <td style={{ padding: '0.8rem', textAlign: 'center' }}>{format(new Date(r.date), 'MM/dd')}</td>
+                                          <td style={{ padding: '0.8rem', textAlign: 'center' }}>{r.readings?.ml?.toLocaleString()}</td>
+                                          <td style={{ padding: '0.8rem', textAlign: 'center' }}>{r.readings?.mp1?.toLocaleString()}</td>
+                                          <td style={{ padding: '0.8rem', textAlign: 'center' }}>{r.readings?.mp?.toLocaleString()}</td>
+                                          <td style={{ padding: '0.8rem', textAlign: 'center' }}>{r.readings?.kwh11?.toLocaleString()}</td>
+                                          <td style={{ padding: '0.8rem', textAlign: 'center' }}>{r.readings?.kwh12?.toLocaleString()}</td>
+                                          <td style={{ padding: '0.8rem', textAlign: 'center' }}>{r.readings?.kwh13?.toLocaleString()}</td>
+                                          <td style={{ padding: '0.8rem', textAlign: 'center' }}>{r.readings?.kwh21?.toLocaleString()}</td>
+                                          <td style={{ padding: '0.8rem', textAlign: 'center' }}>{r.readings?.agv?.toLocaleString()}</td>
                                           <td style={{ padding: '0.8rem', textAlign: 'right' }}>
                                             <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', marginRight: '10px' }}><Edit2 size={14} /></button>
                                             <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
@@ -568,18 +568,18 @@ const Dashboard = () => {
                                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', minWidth: '400px' }}>
                                     <thead>
                                       <tr style={{ borderBottom: '1px solid var(--panel-border)', color: 'var(--text-muted)' }}>
-                                        <th style={{ padding: '0.8rem' }}>日期</th>
-                                        <th style={{ padding: '0.8rem' }}>總水表(早)</th>
-                                        <th style={{ padding: '0.8rem' }}>總水表(夜)</th>
+                                        <th style={{ padding: '0.8rem', textAlign: 'center' }}>日期</th>
+                                        <th style={{ padding: '0.8rem', textAlign: 'center' }}>總水表(早)</th>
+                                        <th style={{ padding: '0.8rem', textAlign: 'center' }}>總水表(夜)</th>
                                         <th style={{ padding: '0.8rem', textAlign: 'right' }}>操作</th>
                                       </tr>
                                     </thead>
                                     <tbody>
                                       {waters.map(r => (
                                         <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                          <td style={{ padding: '0.8rem' }}>{format(new Date(r.date), 'MM/dd')}</td>
-                                          <td style={{ padding: '0.8rem' }}>{r.readings?.total?.toLocaleString()}</td>
-                                          <td style={{ padding: '0.8rem' }}>{r.readings?.drink?.toLocaleString()}</td>
+                                          <td style={{ padding: '0.8rem', textAlign: 'center' }}>{format(new Date(r.date), 'MM/dd')}</td>
+                                          <td style={{ padding: '0.8rem', textAlign: 'center' }}>{r.readings?.total?.toLocaleString()}</td>
+                                          <td style={{ padding: '0.8rem', textAlign: 'center' }}>{r.readings?.drink?.toLocaleString()}</td>
                                           <td style={{ padding: '0.8rem', textAlign: 'right' }}>
                                             <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', marginRight: '10px' }}><Edit2 size={14} /></button>
                                             <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
@@ -602,16 +602,16 @@ const Dashboard = () => {
                                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', minWidth: '300px' }}>
                                     <thead>
                                       <tr style={{ borderBottom: '1px solid var(--panel-border)', color: 'var(--text-muted)' }}>
-                                        <th style={{ padding: '0.8rem' }}>日期</th>
-                                        <th style={{ padding: '0.8rem' }}>雨水回收(自設水表)</th>
+                                        <th style={{ padding: '0.8rem', textAlign: 'center' }}>日期</th>
+                                        <th style={{ padding: '0.8rem', textAlign: 'center' }}>雨水回收(自設水表)</th>
                                         <th style={{ padding: '0.8rem', textAlign: 'right' }}>操作</th>
                                       </tr>
                                     </thead>
                                     <tbody>
                                       {rains.map(r => (
                                         <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                          <td style={{ padding: '0.8rem' }}>{format(new Date(r.date), 'MM/dd')}</td>
-                                          <td style={{ padding: '0.8rem' }}>{r.readings?.rain?.toLocaleString()}</td>
+                                          <td style={{ padding: '0.8rem', textAlign: 'center' }}>{format(new Date(r.date), 'MM/dd')}</td>
+                                          <td style={{ padding: '0.8rem', textAlign: 'center' }}>{r.readings?.rain?.toLocaleString()}</td>
                                           <td style={{ padding: '0.8rem', textAlign: 'right' }}>
                                             <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', marginRight: '10px' }}><Edit2 size={14} /></button>
                                             <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
