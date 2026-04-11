@@ -1,20 +1,21 @@
 :root {
-  /* 恢復深藍配色 */
-  --bg-main: #0f172a;
-  --bg-sidebar: #1e293b;
-  --panel-bg: rgba(30, 41, 59, 0.7);
-  --panel-border: rgba(255, 255, 255, 0.1);
+  /* 切換為沉穩鐵灰背景 */
+  --bg-main: #14161a;           /* 深鐵灰 */
+  --bg-sidebar: #0b0d10;        /* 更深的金屬灰 */
+  --panel-bg: rgba(26, 28, 35, 0.85); /* 鐵灰玻璃質感 */
+  --panel-border: rgba(255, 255, 255, 0.08);
   
+  /* 保持既有的配色組合 (黃/藍/綠) */
   --color-electric: #fbbf24;    /* 用電量 (黃) */
   --color-water: #38bdf8;       /* 自來水 (藍/青) */
   --color-rain: #60a5fa;        /* 雨水回收 (淺藍) */
-  --color-carbon: #8b5cf6;      /* 碳排量 (紫) */
-  
+  --color-carbon: #22c55e;      /* 碳排量 (已改為綠色) */
   --color-success: #22c55e;
+  
   --color-warning: #eab308;
   --color-error: #ef4444;
   
-  --text-main: #f8fafc;
+  --text-main: #f1f5f9;         /* 鈦白色 */
   --text-muted: #94a3b8;
   
   --sidebar-width: 260px;

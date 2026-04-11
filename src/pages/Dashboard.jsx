@@ -403,10 +403,10 @@ const Dashboard = () => {
             <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto' }}>本日降雨機率適中，系統持續回收。</div>
           </div>
 
-          <div className="glass-panel metric-card carbon-card-full" style={{ background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(30, 41, 59, 0.7) 100%)', borderColor: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)', display: 'flex', boxShadow: `0 0 20px ${isCarbonExceeded ? 'rgba(239, 68, 68, 0.1)' : 'rgba(139, 92, 246, 0.1)'}`, padding: '2rem' }}>
+          <div className="glass-panel metric-card carbon-card-full" style={{ background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(26, 28, 35, 0.85) 100%)', borderColor: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', display: 'flex', boxShadow: `0 0 20px ${isCarbonExceeded ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.05)'}`, padding: '2rem' }}>
             <div className="carbon-main-info" style={{ flex: '0 0 300px' }}>
-              <h3 style={{ margin: 0, color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)', display: 'flex', alignItems: 'center', gap: '10px' }}><Globe size={20} /> 碳排量餘額</h3>
-              <div className="metric-value" style={{ color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)', margin: '1rem 0' }}>
+              <h3 style={{ margin: 0, color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '10px' }}><Globe size={20} /> 碳排量餘額</h3>
+              <div className="metric-value" style={{ color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', margin: '1rem 0' }}>
                 <span style={{ fontSize: '3.5rem', fontWeight: 800 }}>{Math.abs(carbonBudget - carbonProjected).toLocaleString()}</span>
                 <span className="metric-unit" style={{ marginLeft: '10px' }}>kg CO2e</span>
               </div>
@@ -414,14 +414,14 @@ const Dashboard = () => {
             <div style={{ flex: '1', paddingLeft: '2rem', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.9rem' }}>
                 <span>目標: {carbonBudget.toLocaleString()} kg</span>
-                <span style={{ color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)' }}>預計達成: {Math.round((carbonProjected/carbonBudget)*100)}%</span>
+                <span style={{ color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)' }}>預計達成: {Math.round((carbonProjected/carbonBudget)*100)}%</span>
               </div>
-              <div className="progress-container" style={{ height: '12px' }}><div className="progress-bar" style={{ width: `${Math.min(100, (carbonProjected/carbonBudget)*100)}%`, backgroundColor: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)' }} /></div>
+              <div className="progress-container" style={{ height: '12px' }}><div className="progress-bar" style={{ width: `${Math.min(100, (carbonProjected/carbonBudget)*100)}%`, backgroundColor: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)' }} /></div>
               <div style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ padding: '6px 12px', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '20px', fontSize: '0.85rem', color: 'var(--color-carbon)', border: '1px solid rgba(139, 92, 246, 0.2)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ padding: '6px 12px', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '20px', fontSize: '0.85rem', color: 'var(--color-success)', border: '1px solid rgba(34, 197, 94, 0.2)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Leaf size={14} /> 換算救了 {Math.max(0, Math.round((carbonBudget - carbonProjected) / 1.0))} 棵樹
                 </div>
-                <div style={{ fontSize: '0.9rem', color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)', fontWeight: 'bold' }}>
+                <div style={{ fontSize: '0.9rem', color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', fontWeight: 'bold' }}>
                   {isCarbonExceeded ? '🚨 碳預算超額' : '✅ 減碳表現優異'}
                 </div>
               </div>
