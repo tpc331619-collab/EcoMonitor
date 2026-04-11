@@ -9,7 +9,8 @@ const Sidebar = () => {
   return (
     <aside className="sidebar shadow-lg">
       <div className="logo" style={{ cursor: 'pointer' }}>
-        Eco-M
+        <Zap className="logo-icon" size={28} />
+        <span>EMS</span>
       </div>
       
       <nav className="sidebar-nav">

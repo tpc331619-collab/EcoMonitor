@@ -1,24 +1,31 @@
 :root {
-  --bg-dark: #0f172a;
-  --bg-darker: #020617;
+  /* 恢復深藍配色 */
+  --bg-main: #0f172a;
+  --bg-sidebar: #1e293b;
   --panel-bg: rgba(30, 41, 59, 0.7);
   --panel-border: rgba(255, 255, 255, 0.1);
+  
+  --color-electric: #fbbf24;    /* 用電量 (黃) */
+  --color-water: #38bdf8;       /* 自來水 (藍/青) */
+  --color-rain: #60a5fa;        /* 雨水回收 (淺藍) */
+  --color-carbon: #8b5cf6;      /* 碳排量 (紫) */
+  
+  --color-success: #22c55e;
+  --color-warning: #eab308;
+  --color-error: #ef4444;
+  
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
-  --color-water: #38bdf8;
-  --color-electric: #fbbf24;
-  --color-rain: #34d399;
-  --color-error: #ef4444;
-  --color-warning: #f97316;
-  --color-success: #10b981;
-  --color-carbon: #8b5cf6;
-  --carbon-glow: rgba(139, 92, 246, 0.4);
+  
+  --sidebar-width: 260px;
+  --header-height: 70px;
+  --transition-speed: 0.3s;
 }
 
 body {
   margin: 0;
   font-family: 'Inter', 'Roboto', 'Outfit', system-ui, sans-serif;
-  background: radial-gradient(circle at top left, var(--bg-dark), var(--bg-darker));
+  background: radial-gradient(circle at top left, var(--bg-main), var(--bg-sidebar));
   color: var(--text-main);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -127,6 +134,86 @@ p {
   justify-content: space-between;
   padding: 0 2rem;
   z-index: 100;
+}
+
+/* Capsule Navigation Refining */
+.capsule-nav {
+  display: flex !important;
+  align-items: center !important;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  padding: 4px 6px;
+  border-radius: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 4px;
+}
+
+.nav-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.nav-current {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  font-weight: 600;
+  color: #fff;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+}
+
+.nav-btn-today {
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  color: var(--color-electric);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 4px;
+}
+
+.nav-btn-today:hover {
+  background: var(--color-electric);
+  color: #fff;
+}
+
+/* Metric Card Action Buttons Refining */
+.card-action {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: var(--text-muted) !important;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.card-action:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #fff !important;
+  transform: translateY(-2px);
 }
 
 .sidebar .logo {
@@ -443,16 +530,30 @@ p {
   .carbon-main-info {
     flex: 0 0 350px;
   }
+}
 
-  .carbon-card-full .progress-section {
-    margin-top: 0 !important;
-    border-left: 1px solid rgba(255, 255, 255, 0.1);
-    padding-left: 5rem;
-    height: 120px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    flex: 1;
-  }
+/* Branding & Logo */
+.logo {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px;
+  font-size: 1.5rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 1px !important;
+  background: linear-gradient(135deg, var(--text-main), var(--color-electric));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.logo-icon {
+  color: var(--color-electric);
+  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.4));
+  animation: logoPulse 2s infinite ease-in-out;
+}
+
+@keyframes logoPulse {
+  0% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.6)); }
+  100% { transform: scale(1); opacity: 0.8; }
 }
 

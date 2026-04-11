@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
 import { doc, getDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
-import { Zap, Droplet, CloudRain, Edit2, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, PenTool, Settings, Calculator, Download, Sparkles, Camera, Cloud, CloudDrizzle, Sun, CloudRain as RainIcon, WifiOff, CloudOff, TrendingDown, Calendar } from 'lucide-react';
+import { Zap, Droplet, CloudRain, Edit2, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, PenTool, Settings, Calculator, Download, Sparkles, Camera, Cloud, CloudDrizzle, Sun, CloudRain as RainIcon, WifiOff, CloudOff, TrendingDown, Calendar, Globe, Leaf, Target } from 'lucide-react';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
-import { format, addMonths, subMonths } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth } from 'date-fns';
 import * as XLSX from 'xlsx';
 import { toBlob, toPng } from 'html-to-image';
 import DataInputModal from '../components/DataInputModal';
@@ -40,8 +40,6 @@ const Dashboard = () => {
   const electricCardRef = useRef(null);
   const waterCardRef = useRef(null);
   const rainCardRef = useRef(null);
-
-  const monthInputRef = useRef(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -95,23 +93,17 @@ const Dashboard = () => {
           const tValueObj = tElem?.Time?.[0]?.ElementValue?.[0] || tElem?.time?.[0]?.elementValue?.[0];
 
           const wx = wxValueObj?.Weather || wxValueObj?.value || wxValueObj?.Value || '未知';
-          const pop = popValueObj?.ProbabilityOfPrecipitation || popValueObj?.value || popValueObj?.Value || '--';
           const temp = tValueObj?.Temperature || tValueObj?.value || tValueObj?.Value || '--';
 
           let icon = 'sun';
           if (wx.includes('雨')) icon = 'rain';
           else if (wx.includes('陰') || wx.includes('多雲')) icon = 'cloud';
 
-          setWeather({ temp, pop, desc: wx, icon, location: location.LocationName || location.locationName || searchKey });
-        } else {
-          setWeather(prev => ({ ...prev, desc: '找不到該區資料' }));
+          setWeather({ temp, desc: wx, icon, location: location.LocationName || location.locationName || searchKey });
         }
-      } else {
-        setWeather(prev => ({ ...prev, desc: 'API 解析失效' }));
       }
     } catch (err) {
       console.error("Weather fetch failed:", err);
-      setWeather(prev => ({ ...prev, desc: '氣象連線中斷' }));
     }
   };
 
@@ -124,48 +116,29 @@ const Dashboard = () => {
       const limitsRef = doc(db, `settings_${currentYear}`, `limits_${currentMonthNum}`);
       const factorSnap = await getDoc(doc(db, "settings", "electric_factor"));
       let loadedMeterFactor = 4.233;
-      let loadedHistory = [{ startMonth: '2000-01', value: 0.495 }];
 
       if (factorSnap.exists()) {
         const fdata = factorSnap.data();
         loadedMeterFactor = Number(fdata.meter_factor || fdata.value) || 4.233;
-
-        // 結構重組與相容性處理 (Array -> Map)
         let rawHistory = fdata.emission_history || {};
         if (Array.isArray(rawHistory)) {
-          // ⚠️ 自動遷移邏輯：將陣列轉為以 startMonth 為 Key 的物件
           const migratedMap = {};
-          rawHistory.forEach(h => {
-            if (h.startMonth) migratedMap[h.startMonth] = h.value;
-          });
+          rawHistory.forEach(h => { if (h.startMonth) migratedMap[h.startMonth] = h.value; });
           rawHistory = migratedMap;
-        } else if (fdata.emission_factor) {
-          // 向上相容單一值格式
-          rawHistory = { '2000-01': Number(fdata.emission_factor) };
         }
-
         setElectricFactor(loadedMeterFactor);
         setEmissionHistory(rawHistory);
-
-        // 自動匹配適合當前月份的係數 (從 Map 中找出最接近的 startMonth)
         const sortedMonths = Object.keys(rawHistory).sort((a, b) => b.localeCompare(a));
         const activeMonth = sortedMonths.find(m => m <= currentMonthStr) || sortedMonths[sortedMonths.length - 1];
         setEmissionFactor(rawHistory[activeMonth] || 0.495);
       }
 
-      const loadedFactor = loadedMeterFactor;
-
       const carbonSnap = await getDoc(doc(db, `settings_${currentYear}`, "carbon_goals"));
-      if (carbonSnap.exists()) {
-        setCarbonGoals(carbonSnap.data());
-      }
+      if (carbonSnap.exists()) setCarbonGoals(carbonSnap.data());
 
       const setSnap = await getDoc(limitsRef);
-      if (setSnap.exists()) {
-        setLimits(setSnap.data());
-      } else {
-        setLimits({ electric: 1000, water: 500 });
-      }
+      if (setSnap.exists()) setLimits(setSnap.data());
+      else setLimits({ electric: 1000, water: 500 });
 
       const q = query(collection(db, `usage_records_${currentYear}`), where('month', '==', currentMonthStr));
       const querySnapshot = await getDocs(q);
@@ -178,7 +151,6 @@ const Dashboard = () => {
       querySnapshot.forEach((docSnap) => {
         const d = docSnap.data();
         recs.push({ id: docSnap.id, ...d });
-
         if (d.type === 'electric') electricRecords.push(d);
         if (d.type === 'water') waterRecords.push(d);
         if (d.type === 'rain') rainRecords.push(d);
@@ -194,28 +166,10 @@ const Dashboard = () => {
       if (electricBaseRecord && electricRecords.length >= 1) {
         const base = electricBaseRecord.readings;
         const latest = electricRecords[electricRecords.length - 1].readings;
-        if (latest !== base) {
-          const A = ((latest.ml || 0) - (base.ml || 0)) * 1000;
-          const B = ((latest.mp1 || 0) - (base.mp1 || 0)) * 1000;
-          const C = ((latest.mp || 0) - (base.mp || 0)) * 1000;
-          const D = (latest.kwh11 || 0) - (base.kwh11 || 0);
-          const E = (latest.kwh12 || 0) - (base.kwh12 || 0);
-          const F = (latest.kwh13 || 0) - (base.kwh13 || 0);
-          const G = (latest.kwh21 || 0) - (base.kwh21 || 0);
-          const H = (latest.agv || 0) - (base.agv || 0);
-          const totalDiff = A + B + C + D + E + F + G + H;
-          e = totalDiff * loadedFactor;
-        } else {
-          const A = (base.ml || 0) * 1000;
-          const B = (base.mp1 || 0) * 1000;
-          const C = (base.mp || 0) * 1000;
-          const D = base.kwh11 || 0;
-          const E = base.kwh12 || 0;
-          const F = base.kwh13 || 0;
-          const G = base.kwh21 || 0;
-          const H = base.agv || 0;
-          e = (A + B + C + D + E + F + G + H) * loadedFactor;
-        }
+        const totalBase = (base.ml || 0)*1000 + (base.mp1 || 0)*1000 + (base.mp || 0)*1000 + (base.kwh11 || 0) + (base.kwh12 || 0) + (base.kwh13 || 0) + (base.kwh21 || 0) + (base.agv || 0);
+        const totalLatest = (latest.ml || 0)*1000 + (latest.mp1 || 0)*1000 + (latest.mp || 0)*1000 + (latest.kwh11 || 0) + (latest.kwh12 || 0) + (latest.kwh13 || 0) + (latest.kwh21 || 0) + (latest.agv || 0);
+        e = (totalLatest - totalBase) * loadedMeterFactor;
+        if (electricRecords.length === 1) e = totalBase * loadedMeterFactor;
       }
 
       let w = 0;
@@ -223,15 +177,14 @@ const Dashboard = () => {
       if (waterBaseRecord && waterRecords.length >= 1) {
         const base = waterBaseRecord.readings;
         const latest = waterRecords[waterRecords.length - 1].readings;
-        w = (latest.drink || 0) - (base.total || 0);
+        w = (latest.total || 0) - (base.total || 0);
+        if (waterRecords.length === 1) w = 0; // 同一天無累積
       }
 
       let rUsage = 0;
       const rain01 = rainRecords.find(r => format(new Date(r.date), 'dd') === '01');
       const latestRain = rainRecords[rainRecords.length - 1];
-      if (latestRain && rain01) {
-        rUsage = (latestRain.readings?.rain || 0) - (rain01.readings?.rain || 0);
-      }
+      if (latestRain && rain01) rUsage = (latestRain.readings?.rain || 0) - (rain01.readings?.rain || 0);
 
       setCurrentUsage({ electric: e, water: w, rain: rUsage });
       setRecords(recs);
@@ -242,95 +195,57 @@ const Dashboard = () => {
     }
   };
 
-  const handlePrevMonth = () => setCurrentMonthDate(subMonths(currentMonthDate, 1));
-  const handleNextMonth = () => setCurrentMonthDate(addMonths(currentMonthDate, 1));
+  const handleMonthChange = (offset) => setCurrentMonthDate(prev => offset > 0 ? addMonths(prev, offset) : subMonths(prev, Math.abs(offset)));
 
   const getDaysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   const getDaysPassed = (date) => {
     const now = new Date();
-    if (date.getMonth() !== now.getMonth() || date.getFullYear() !== now.getFullYear()) {
-      return getDaysInMonth(date);
-    }
+    if (date.getMonth() !== now.getMonth() || date.getFullYear() !== now.getFullYear()) return getDaysInMonth(date);
     return Math.max(1, now.getDate());
   };
 
   const daysTotal = getDaysInMonth(currentMonthDate);
   const daysPassed = getDaysPassed(currentMonthDate);
+  const currentWeek = Math.ceil(daysPassed / 7);
+  const benchDays = Math.min(daysTotal, currentWeek * 7);
+
+  const eLimit = limits.electric || 1;
+  const wLimit = limits.water || 1;
+  const eBench = (eLimit / daysTotal) * benchDays;
+  const wBench = (wLimit / daysTotal) * benchDays;
+  const ePace = currentUsage.electric / (eBench || 1);
+  const wPace = currentUsage.water / (wBench || 1);
+
+  const electricPct = Math.min(100, (currentUsage.electric / eLimit) * 100);
+  const waterPct = Math.min(100, (currentUsage.water / wLimit) * 100);
+
+  const eProjected = (currentUsage.electric / daysPassed) * daysTotal;
+  const carbonBudget = Math.round(carbonGoals.baseYearAvg * (1 - carbonGoals.reductionTarget / 100) * emissionFactor);
+  const carbonProjected = Math.round(eProjected * emissionFactor);
+  const isCarbonExceeded = carbonProjected > carbonBudget;
 
   const getAITip = (type, used, limit) => {
-    if (used === 0) return '⚡ 系統待命中，請輸入第一筆數據以啟動分析';
+    if (used === 0) return '⚡ 系統待命中...';
+    const pace = type === 'electric' ? ePace : wPace;
+    if (pace > 1.2) return <span className="text-error">🚨 異常超標</span>;
+    if (pace > 1.05) return <span className="text-warning">⚠️ 些微超過</span>;
+    return <span className="text-success">✅ 狀態正常</span>;
+  };
 
-    const dailyRate = used / daysPassed;
-    const projected = dailyRate * daysTotal;
-    const projectedPct = (projected / (limit || 1)) * 100;
-    const remainingDays = Math.max(0, daysTotal - daysPassed);
-    
-    // 💡 智能標竿計算：改為「週標竿」，每 7 天為一階
-    const currentWeek = Math.ceil(daysPassed / 7);
-    const benchDays = Math.min(daysTotal, currentWeek * 7);
-    const benchUsage = (limit / daysTotal) * benchDays;
-    const paceRatio = used / (benchUsage || 1);
-
+  const getDetailedAnalysis = (type, used, limit) => {
+    if (used === 0) return '請輸入第一筆數據以啟動分析。';
     if (type === 'electric') {
-      const tempNum = parseFloat(weather.temp) || 0;
-      
-      // 異常偵測 (比預期進度快 25%)
-      if (paceRatio > 1.25) {
-        return <span className="text-error"><span className="dot dot-error" /> 🚨 <b>異常超標</b>：目前用量已超過進度標竿 {( (paceRatio - 1) * 100 ).toFixed(1)}%，請立即檢查高耗能設備。</span>;
-      }
-      
-      if (tempNum >= 28) {
-        return <span className="text-warning"><span className="dot dot-warning" /> 🔥 <b>高溫提示</b>：氣溫 {weather.temp}°C，預計空調負載將增加。建議調高 1°C 可節省約 6% 電量。</span>;
-      }
-      
-      if (projectedPct > 100) {
-        const diff = projected - limit;
-        const dailyReduction = diff / (remainingDays + 1);
-        return <span className="text-error"><span className="dot dot-error" /> 🔴 警示：月底預計耗用 {Math.round(projectedPct)}%。建議每日減用 {Math.round(dailyReduction).toLocaleString()}度以拉回目標</span>;
-      }
-      
-      if (paceRatio > 1.1) {
-        return <span className="text-warning"><span className="dot dot-warning" /> 🟡 <b>趨勢過快</b>：目前進度已超前 {Math.round((paceRatio-1)*100)}%，月底有超標風險。</span>;
-      }
-
-      if (projectedPct >= 75) {
-        return <span className="text-success"><span className="dot dot-success" /> 🟢 完美：目前進度穩定，預算利用率 {Math.round(projectedPct)}%。</span>;
-      }
-      return <span className="text-info"><span className="dot dot-info" /> 🔵 空間：目前節能表現優異，尚有 {Math.round(limit - projected).toLocaleString()} 度預算空間</span>;
+      const remaining = limit - used;
+      if (remaining > 0) return `🔵 空間：目前節約表現優異，尚有 ${Math.round(remaining).toLocaleString()} 度預算空間。`;
+      return `🔴 警告：目前累積用量已超過月度預算上限。`;
     }
-
     if (type === 'water') {
-      if (weather.desc?.includes('雨') || parseInt(weather.pop) >= 60) {
-        return <span className="text-info"><span className="dot dot-info" /> 💧 <b>建議切換</b>：偵測到降雨機率高，建議優先使用雨水回收槽，節省自來水。</span>;
-      }
-      
-      if (paceRatio > 1.25) {
-        return <span className="text-error"><span className="dot dot-error" /> 🚨 <b>用水異常</b>：目前累積進度嚴重超標，請檢查是否有管線漏水。</span>;
-      }
-
-      if (projectedPct > 100) {
-        const diff = projected - limit;
-        return <span className="text-error"><span className="dot dot-error" /> 🔴 警告：用水預計將超標！目前預估為 {Math.round(projectedPct)}%。</span>;
-      }
-      
-      if (paceRatio > 1.1) {
-        return <span className="text-warning"><span className="dot dot-warning" /> 🟡 <b>提示</b>：用水進度略快，請留意過度灌溉或非必要消耗。</span>;
-      }
-
-      if (projectedPct >= 70) {
-        return <span className="text-success"><span className="dot dot-success" /> 🟢 穩定：用水進度控制良好，請繼續保持。</span>;
-      }
-      return <span className="text-info"><span className="dot dot-info" /> 🔵 備載：目前用水極度節省，餘額充裕。</span>;
+      const pct = (used / limit) * 100;
+      if (pct < 30) return `🔵 備載：目前用水極度節省，餘額非常充裕。`;
+      if (pct < 80) return `🔵 狀況：目前用水量控制在預期範圍內。`;
+      return `🟡 注意：用水進度較快，建議檢查是否有滲漏。`;
     }
-
-    if (type === 'rain') {
-      const popInt = parseInt(weather.pop) || 0;
-      if (popInt >= 50) {
-        return <span className="text-info"><span className="dot dot-info" /> 🌧️ 預警：降雨機率高 ({weather.pop}%)，建議備妥儲水槽空間，最大化回收效益</span>;
-      }
-      return <span className="text-success"><span className="dot dot-success" /> 🟢 系統正常：雨水回收運作中，目前為主要輔助水源</span>;
-    }
-    return null;
+    return '';
   };
 
   const handleDelete = async (monthStr, id) => {
@@ -341,9 +256,34 @@ const Dashboard = () => {
     }
   };
 
-  const calcPercent = (used, limit) => Math.min((used / (limit || 1)) * 100, 100);
-  const electricPct = calcPercent(currentUsage.electric, limits.electric);
-  const waterPct = calcPercent(currentUsage.water, limits.water);
+  const handleCopyCardImage = async (ref, title) => {
+    if (!ref.current) return;
+    try {
+      const blob = await toBlob(ref.current, { backgroundColor: '#0f172a', style: { borderRadius: '12px' } });
+      
+      if (navigator.clipboard && window.ClipboardItem) {
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob })
+        ]);
+        alert(`${title} 圖片已複製到剪貼簿！`);
+      } else {
+        const dataUrl = await toPng(ref.current, { backgroundColor: '#0f172a', style: { borderRadius: '12px' } });
+        const link = document.createElement('a');
+        link.download = `${title}_${format(new Date(), 'MMdd')}.png`;
+        link.href = dataUrl;
+        link.click();
+        alert('已下載監測快照點 (您的瀏覽器不支援直接複製圖片)。');
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  const handleExportExcel = () => {
+    const wb = XLSX.utils.book_new();
+    const exportData = records.map(r => ({ "日期": format(new Date(r.date), 'yyyy/MM/dd'), "類型": r.type, ...r.readings }));
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    XLSX.utils.book_append_sheet(wb, ws, "資源明細");
+    XLSX.writeFile(wb, `${currentMonthStr}_資源明細.xlsx`);
+  };
 
   const WeatherIcon = () => {
     if (weather.icon === 'rain') return <RainIcon className="text-water" size={18} />;
@@ -351,596 +291,182 @@ const Dashboard = () => {
     return <Sun className="text-warning" size={18} />;
   };
 
-  const handleCopyCardImage = async (ref, title) => {
-    if (!ref.current) return;
-
-    // 檢查瀏覽器是否支援圖片剪貼簿 (iOS 14.7+ 與現代瀏覽器支持)
-    const canCopyImage = window.ClipboardItem && navigator.clipboard?.write;
-
-    if (canCopyImage) {
-      try {
-        // ✨ 專業技巧：在 iOS Safari 必須同步建立項並傳入 Promise，否則會被安全性攔截
-        const item = new ClipboardItem({
-          'image/png': toBlob(ref.current, {
-            backgroundColor: '#0f172a',
-            style: { borderRadius: '12px' }
-          })
-        });
-
-        await navigator.clipboard.write([item]);
-        alert(`${title} 圖片已複製！現在可以去 LINE 貼上了。`);
-        return;
-      } catch (err) {
-        console.error('剪貼簿寫入失敗，切換至分享模式:', err);
-      }
-    }
-
-    try {
-      const blob = await toBlob(ref.current, {
-        backgroundColor: '#0f172a',
-        style: { borderRadius: '12px' }
-      });
-
-      const file = new File([blob], `${title}_status.png`, { type: 'image/png' });
-
-      // 1. 嘗試預備分享 (原生分享介面)
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: `${title} 監測狀態`,
-          text: `Eco-M ${title} 資源監測數據`
-        });
-        return;
-      }
-
-      // 2. 萬不得已才用下載 (相容性最強)
-      const dataUrl = await toPng(ref.current, {
-        backgroundColor: '#0f172a',
-        style: { borderRadius: '12px' }
-      });
-      const link = document.createElement('a');
-      link.download = `${title}_${format(new Date(), 'MMdd')}.png`;
-      link.href = dataUrl;
-      link.click();
-      alert('由於瀏覽器限制，已改為下載圖片至您的裝置。');
-
-    } catch (err) {
-      console.error('操作失敗:', err);
-      alert('目前瀏覽器不支持此功能，請手動擷取螢幕畫面。');
-    }
-  };
-
   const electricList = records.filter(r => r.type === 'electric');
   const waterList = records.filter(r => r.type === 'water');
   const rainList = records.filter(r => r.type === 'rain');
-
-  const toggleExpand = (type) => setExpandedTables(prev => ({ ...prev, [type]: !prev[type] }));
-  const getDisplayList = (list, type) => expandedTables[type] ? list : list.slice(0, 2);
-
-  const handleExportExcel = () => {
-    const wb = XLSX.utils.book_new();
-    if (electricList.length > 0) {
-      const electricData = electricList.map(r => ({
-        "日期": format(new Date(r.date), 'yyyy/MM/dd'),
-        "ML": r.readings?.ml ?? 0,
-        "MP-1": r.readings?.mp1 ?? 0,
-        "MP": r.readings?.mp ?? 0,
-        "1-1": r.readings?.kwh11 ?? 0,
-        "1-2": r.readings?.kwh12 ?? 0,
-        "1-3": r.readings?.kwh13 ?? 0,
-        "2-1": r.readings?.kwh21 ?? 0,
-        "AGV": r.readings?.agv ?? 0
-      }));
-      const ws1 = XLSX.utils.json_to_sheet(electricData);
-      XLSX.utils.book_append_sheet(wb, ws1, "配電紀錄");
-    }
-    if (waterList.length > 0) {
-      const waterData = waterList.map(r => ({
-        "日期": format(new Date(r.date), 'yyyy/MM/dd'),
-        "總水量": r.readings?.total ?? 0,
-        "飲用水表": r.readings?.drink ?? 0
-      }));
-      const ws2 = XLSX.utils.json_to_sheet(waterData);
-      XLSX.utils.book_append_sheet(wb, ws2, "配水紀錄");
-    }
-    if (rainList.length > 0) {
-      const rainData = rainList.map(r => ({
-        "日期": format(new Date(r.date), 'yyyy/MM/dd'),
-        "雨水回收": r.readings?.rain ?? 0
-      }));
-      const ws3 = XLSX.utils.json_to_sheet(rainData);
-      XLSX.utils.book_append_sheet(wb, ws3, "雨水紀錄");
-    }
-    XLSX.writeFile(wb, `${currentMonthStr}_資源明細紀錄.xlsx`);
-  };
-
-  const eProjected = (currentUsage.electric / daysPassed) * daysTotal;
-  const wProjected = (currentUsage.water / daysPassed) * daysTotal;
-  const eLimit = limits.electric || 1;
-  const wLimit = limits.water || 1;
-  const carbonBudget = Math.round(carbonGoals.baseYearAvg * (1 - carbonGoals.reductionTarget / 100) * emissionFactor);
-  const carbonProjected = Math.round(eProjected * emissionFactor);
-
-  const isElectricExceeded = eProjected > eLimit;
-  const isWaterExceeded = wProjected > wLimit;
-  const isCarbonExceeded = carbonProjected > carbonBudget;
-
-  const statusLevel = isCarbonExceeded ? 'danger' : (isElectricExceeded || isWaterExceeded ? 'warning' : 'success');
-
-  const getStatusColor = () => {
-    if (statusLevel === 'danger') return 'var(--color-error)';
-    if (statusLevel === 'warning') return '#f59e0b';
-    return 'var(--color-success)';
-  };
-
-  const getStatusBg = () => {
-    if (statusLevel === 'danger') return 'radial-gradient(circle, rgba(239, 68, 68, 0.15) 0%, transparent 70%)';
-    if (statusLevel === 'warning') return 'radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, transparent 70%)';
-    return 'radial-gradient(circle, rgba(34, 197, 94, 0.15) 0%, transparent 70%)';
-  };
-
-  // 💡 週標竿邏輯：每 7 天為一個里程碑
-  const currentWeek = Math.ceil(daysPassed / 7);
-  const benchDays = Math.min(daysTotal, currentWeek * 7);
-  const eBench = (eLimit / daysTotal) * benchDays;
-  const wBench = (wLimit / daysTotal) * benchDays;
-  
-  // 計算 Pace (改為對比週標竿)
-  const ePace = currentUsage.electric / (eBench || 1);
-  const wPace = currentUsage.water / (wBench || 1);
+  const getDisplayList = (list) => isHistoryExpanded ? list : list.slice(0, 2);
 
   if (loading) return <div className="loader-container"><div className="spinner"></div></div>;
 
   return (
-    <div className="fade-in">
-      <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '0.8rem' }}>
-        <div style={{ flex: '1', minWidth: '100%', marginBottom: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '1rem', flexWrap: 'wrap' }}>
+    <>
+      <div className="fade-in">
+        <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '1.5rem', flexWrap: 'wrap' }}>
             <h1 style={{ 
               margin: 0, 
-              fontSize: 'clamp(1.4rem, 5vw, 1.8rem)', 
-              fontWeight: '800',
-              background: 'linear-gradient(to bottom, #ffffff, #94a3b8)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
+              fontSize: 'clamp(1.2rem, 5vw, 1.8rem)', 
+              fontWeight: 800,
               letterSpacing: '-0.5px',
               whiteSpace: 'nowrap'
             }}>
               Eco Utility Pulse AI 智慧資源監控
             </h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <WeatherIcon />
-                <span style={{ color: '#fbbf24', fontWeight: '600' }}>{weather.location} | {weather.desc} {weather.temp}°C</span>
+                <span style={{ fontWeight: 600, color: 'var(--color-electric)' }}>{weather.location} | {weather.desc} {weather.temp}°C</span>
               </div>
-              <span style={{ opacity: 0.3 }}>|</span>
-              <span>{format(new Date(), 'yyyy/MM/dd')}</span>
-              {!isOnline && (
-                <span className="badge badge-warning" style={{ display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'none', padding: '2px 8px', fontSize: '0.7rem', marginLeft: '5px' }}>
-                  <WifiOff size={12} /> 離線中
-                </span>
-              )}
+              <span style={{ opacity: 0.5 }}>|</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={14} /><span>{format(new Date(), 'yyyy/MM/dd')}</span></div>
             </div>
           </div>
-        </div>
-        {/* 頂級膠囊導航列 */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          background: 'rgba(255, 255, 255, 0.04)', 
-          backdropFilter: 'blur(12px)',
-          padding: '4px', 
-          borderRadius: '30px', 
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-          marginBottom: '5px'
-        }}>
-          {/* 上個月 */}
-          <button 
-            onClick={handlePrevMonth} 
-            className="hover-bright"
-            style={{ 
-              background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.7)', 
-              cursor: 'pointer', padding: '8px', borderRadius: '50%',
-              display: 'flex', alignItems: 'center', transition: 'all 0.3s'
-            }}
-          >
-            <ChevronLeft size={20} />
-          </button>
 
-          {/* 月份選擇視窗 (隱形觸發器) */}
-          <div 
-            style={{ position: 'relative', display: 'flex', alignItems: 'center', padding: '0 12px', gap: '8px', cursor: 'pointer' }}
-          >
-            <span style={{ 
-              fontSize: '1rem', fontWeight: 600, color: '#fff', 
-              letterSpacing: '1px', pointerEvents: 'none',
-              textShadow: '0 0 12px rgba(99, 102, 241, 0.4)',
-              display: 'flex', alignItems: 'center', gap: '8px'
-            }}>
-              {currentMonthStr.substring(0, 4)}年{currentMonthStr.substring(5, 7)}月
-              <Calendar size={16} style={{ color: '#ffffff' }} />
-            </span>
-            <input 
-              ref={monthInputRef}
-              type="month" 
-              value={currentMonthStr}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (val) {
-                  const [y, m] = val.split('-');
-                  setCurrentMonthDate(new Date(parseInt(y), parseInt(m) - 1, 1));
-                }
-              }}
-              style={{ 
-                position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                opacity: 0, cursor: 'pointer',
-                zIndex: 2,
-                appearance: 'none', WebkitAppearance: 'none'
-              }}
-            />
+          <div className="capsule-nav">
+            <button className="nav-btn" onClick={() => handleMonthChange(-1)}><ChevronLeft size={16} /></button>
+            <div className="nav-current">
+              <Calendar size={16} />
+              <span>{format(currentMonthDate, 'yyyy年MM月')}</span>
+            </div>
+            <button className="nav-btn" onClick={() => handleMonthChange(1)}><ChevronRight size={16} /></button>
+            <button className="nav-btn-today" onClick={() => setCurrentMonthDate(startOfMonth(new Date()))}>本月</button>
           </div>
-
-          {/* 下個月 */}
-          <button 
-            onClick={handleNextMonth} 
-            className="hover-bright"
-            style={{ 
-              background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.7)', 
-              cursor: 'pointer', padding: '8px', borderRadius: '50%',
-              display: 'flex', alignItems: 'center', transition: 'all 0.3s'
-            }}
-          >
-            <ChevronRight size={20} />
-          </button>
-
-          {/* 分隔線 */}
-          <div style={{ width: '1px', height: '16px', background: 'rgba(255,255,255,0.15)', margin: '0 4px' }} />
-
-          {/* 回到今天 */}
-          <button 
-            onClick={() => setCurrentMonthDate(new Date())}
-            style={{ 
-              background: 'rgba(99, 102, 241, 0.15)', 
-              border: '1px solid rgba(99, 102, 241, 0.3)', 
-              color: '#818cf8', 
-              fontSize: '0.75rem', 
-              fontWeight: 600,
-              cursor: 'pointer',
-              padding: '6px 14px', 
-              borderRadius: '20px',
-              display: 'flex', alignItems: 'center',
-              transition: 'all 0.3s'
-            }}
-            className="btn-today-active"
-          >
-             本月
-          </button>
         </div>
-      </div>
 
-
-      <div className="metric-grid">
-        <div className="glass-panel metric-card" ref={electricCardRef} style={{ 
-          borderColor: ePace >= 1.25 ? 'var(--color-error)' : (ePace >= 1.1 ? 'var(--color-warning)' : 'var(--panel-border)'),
-          boxShadow: ePace >= 1.25 ? '0 0 20px rgba(239, 68, 68, 0.2)' : 'none',
-          animation: ePace >= 1.25 ? 'pulse-red 2s infinite' : 'none'
-        }}>
-          <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 className="metric-title" style={{ margin: 0, fontSize: 'clamp(0.9rem, 3.5vw, 1.1rem)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Zap className="text-electric" /> {currentMonthStr.replace('-', '/')} 月份累計用電量</h3>
-            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-              <button onClick={() => handleCopyCardImage(electricCardRef, '用電')} style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }} title="複製圖片"><Camera size={16} /></button>
-              <div style={{ display: 'flex', gap: '0.4rem' }}>
-                {role === 'admin' && (
-                  <><button onClick={() => setFactorModalOpen(true)} style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><Calculator size={16} className="text-electric" /></button>
-                    <button onClick={() => { setInputType('electric'); setLimitModalOpen(true); }} style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><Settings size={16} className="text-electric" /></button></>
-                )}
-                {role !== 'guest' && <button onClick={() => { setInputType('electric'); setInputModalOpen(true); }} style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><PenTool size={16} className="text-electric" /></button>}
+        <div className="metric-grid">
+          <div className="glass-panel metric-card" ref={electricCardRef}>
+            <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 className="metric-title"><Zap size={18} className="text-electric" /> 用電量標竿</h3>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => handleCopyCardImage(electricCardRef, '用電')} className="card-action"><Camera size={16} /></button>
+                <button onClick={() => setFactorModalOpen(true)} className="card-action"><Calculator size={16} /></button>
+                {role !== 'guest' && <button onClick={() => { setInputType('electric'); setInputModalOpen(true); }} className="card-action text-electric"><PenTool size={16} /></button>}
+                <button onClick={() => { setInputType('electric'); setLimitModalOpen(true); }} className="card-action"><Target size={16} /></button>
               </div>
             </div>
-          </div>
-          <div className="metric-value text-electric">
-            <span style={{ fontSize: '3rem' }}>{Math.round(currentUsage.electric).toLocaleString()}</span>
-            <span className="metric-unit">/ {limits.electric.toLocaleString()} 度</span>
-          </div>
-          <div style={{ fontSize: '0.8rem', marginBottom: '1.2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-            <span style={{ 
-              padding: '4px 10px', 
-              background: 'rgba(251, 191, 36, 0.1)', 
-              borderRadius: '6px',
-              color: 'var(--color-electric)',
-              fontWeight: '700',
-              border: '1px solid rgba(251, 191, 36, 0.2)',
-              fontSize: '0.75rem'
-            }}>
-              本週建議上限 (第 {currentWeek} 週): {Math.round(eBench).toLocaleString()} 度
-            </span>
-            <span style={{ 
-              color: ePace > 1 ? 'var(--color-error)' : 'var(--color-success)',
-              fontWeight: '800',
-              fontSize: '0.85rem'
-            }}>
-              {ePace > 1 ? `🚨 已超標 ${Math.round((ePace - 1) * 100)}%` : '✅ 進度正常'}
-            </span>
-          </div>
-          <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto' }}>{getAITip('electric', currentUsage.electric, limits.electric)}</div>
-          <div className="progress-container"><div className="progress-bar" style={{ width: `${electricPct}%`, backgroundColor: electricPct >= 90 ? 'var(--color-error)' : 'var(--color-electric)' }} /></div>
-        </div>
-
-        <div className="glass-panel metric-card" ref={waterCardRef} style={{ 
-          borderColor: wPace >= 1.25 ? 'var(--color-error)' : (wPace >= 1.1 ? 'var(--color-warning)' : 'var(--panel-border)'),
-          boxShadow: wPace >= 1.25 ? '0 0 20px rgba(239, 68, 68, 0.2)' : 'none'
-        }}>
-          <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 className="metric-title" style={{ margin: 0, fontSize: 'clamp(0.9rem, 3.5vw, 1.1rem)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Droplet className="text-water" /> {currentMonthStr.replace('-', '/')} 月份累計用水量</h3>
-            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-              <button onClick={() => handleCopyCardImage(waterCardRef, '用水')} style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }} title="複製圖片"><Camera size={16} /></button>
-              <div style={{ display: 'flex', gap: '0.4rem' }}>
-                {role === 'admin' && <button onClick={() => { setInputType('water'); setLimitModalOpen(true); }} style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><Settings size={16} className="text-water" /></button>}
-                {role !== 'guest' && <button onClick={() => { setInputType('water'); setInputModalOpen(true); }} style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><PenTool size={16} className="text-water" /></button>}
+            <div className="metric-value text-electric" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '0.5rem' }}>
+              <div>
+                <span>{Math.round(currentUsage.electric).toLocaleString()}</span><span className="metric-unit">/{eLimit.toLocaleString()} 度</span>
+              </div>
+              <div style={{ fontSize: '0.8rem', fontWeight: 500, maxWidth: '180px', lineHeight: '1.4', marginBottom: '8px' }}>
+                {getAITip('electric', currentUsage.electric, eLimit)}
               </div>
             </div>
-          </div>
-          <div className="metric-value text-water">
-            <span style={{ fontSize: '3rem' }}>{Math.round(currentUsage.water).toLocaleString()}</span>
-            <span className="metric-unit">/ {limits.water.toLocaleString()} 度</span>
-          </div>
-          <div style={{ fontSize: '0.8rem', marginBottom: '1.2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-            <span style={{ 
-              padding: '4px 10px', 
-              background: 'rgba(56, 189, 248, 0.1)', 
-              borderRadius: '6px',
-              color: 'var(--color-water)',
-              fontWeight: '700',
-              border: '1px solid rgba(56, 189, 248, 0.2)',
-              fontSize: '0.75rem'
-            }}>
-              本週建議上限 (第 {currentWeek} 週): {Math.round(wBench).toLocaleString()} 度
-            </span>
-            <span style={{ 
-              color: wPace > 1 ? 'var(--color-error)' : 'var(--color-success)',
-              fontWeight: '800',
-              fontSize: '0.85rem'
-            }}>
-              {wPace > 1 ? `🚨 已超標 ${Math.round((wPace - 1) * 100)}%` : '✅ 進度正常'}
-            </span>
-          </div>
-          <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto' }}>{getAITip('water', currentUsage.water, limits.water)}</div>
-          <div className="progress-container"><div className="progress-bar" style={{ width: `${waterPct}%`, backgroundColor: waterPct >= 90 ? 'var(--color-error)' : 'var(--color-water)' }} /></div>
-        </div>
-
-        <div className="glass-panel metric-card" ref={rainCardRef}>
-          <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 className="metric-title" style={{ margin: 0, fontSize: 'clamp(0.9rem, 3.5vw, 1.1rem)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CloudRain className="text-rain" /> {currentMonthStr.replace('-', '/')} 月份雨水回收量</h3>
-            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-              <button onClick={() => handleCopyCardImage(rainCardRef, '雨水')} style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }} title="複製圖片"><Camera size={16} /></button>
-              {role !== 'guest' && <button onClick={() => { setInputType('rain'); setInputModalOpen(true); }} style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><PenTool size={16} className="text-rain" /></button>}
-            </div>
-          </div>
-          <div className="metric-value text-rain"><span style={{ fontSize: '3rem' }}>{Math.round(currentUsage.rain).toLocaleString()}</span><span className="metric-unit">度</span></div>
-          <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto' }}>{getAITip('rain', currentUsage.rain, 1000)}</div>
-        </div>
-
-        {/* 碳排量指標卡 (環境貢獻總結) - 桌機版全寬優化 */}
-        <div className="glass-panel metric-card carbon-card-full" style={{ 
-          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(30, 41, 59, 0.7) 100%)',
-          borderColor: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)',
-          position: 'relative',
-          overflow: 'hidden',
-          display: 'flex',
-          boxShadow: `0 0 20px ${isCarbonExceeded ? 'rgba(239, 68, 68, 0.1)' : 'rgba(139, 92, 246, 0.1)'}`
-        }}>
-          <div style={{
-            position: 'absolute',
-            bottom: '-20px',
-            right: '-10px',
-            width: '120px',
-            height: '120px',
-            background: `radial-gradient(circle, ${isCarbonExceeded ? 'rgba(239, 68, 68, 0.2)' : 'rgba(139, 92, 246, 0.2)'} 0%, transparent 70%)`,
-            zIndex: 0,
-            opacity: 0.6
-          }} />
-          
-          <div className="carbon-main-info" style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <div className="metric-header" style={{ marginBottom: '0.8rem' }}>
-              <h3 className="metric-title" style={{ margin: 0, color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)', fontWeight: 700 }}>
-                <Sparkles size={18} /> {currentMonthStr.replace('-', '/')} 碳排量餘額
-              </h3>
-            </div>
-            <div className="metric-value" style={{ color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)', margin: 0 }}>
-              <span style={{ fontSize: '3.5rem', fontWeight: 800 }}>
-                {isCarbonExceeded ? (Math.abs(carbonBudget - carbonProjected).toLocaleString()) : (carbonBudget - carbonProjected).toLocaleString()}
-              </span>
-              <span className="metric-unit" style={{ color: 'var(--text-muted)', marginLeft: '8px' }}>kg CO2e</span>
-            </div>
-          </div>
-          
-          <div className="progress-section" style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 500 }}>
-              <div style={{ display: 'flex', gap: '1.5rem' }}>
-                <span>月預計: <b style={{ color: 'var(--text-main)' }}>{carbonProjected.toLocaleString()}</b> kg</span>
-                <span>減量目標: <b style={{ color: 'var(--text-main)' }}>{carbonBudget.toLocaleString()}</b> kg</span>
-              </div>
-              <span style={{ color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)' }}>
-                目標達成率: {Math.round((carbonProjected / (carbonBudget || 1)) * 100)}%
+            <div style={{ fontSize: '0.75rem', marginBottom: '1rem' }}>
+              <span style={{ padding: '4px 8px', background: 'rgba(251, 191, 36, 0.1)', borderRadius: '4px', color: 'var(--color-electric)', fontWeight: 'bold' }}>
+                本週建議上限 (第 {currentWeek} 週): {Math.round(eBench).toLocaleString()} 度
               </span>
             </div>
-            
-            <div className="progress-container" style={{ height: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px' }}>
-              <div className="progress-bar" style={{ 
-                width: `${Math.min(100, (carbonProjected / (carbonBudget || 1)) * 100)}%`, 
-                backgroundColor: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)',
-                boxShadow: `0 0 15px ${isCarbonExceeded ? 'rgba(239, 68, 68, 0.3)' : 'rgba(139, 92, 246, 0.3)'}`
-              }} />
+            <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.8rem' }}>
+              {getDetailedAnalysis('electric', currentUsage.electric, eLimit)}
             </div>
-            
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '16px' }}>
-              <div style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)' }}>
-                {isCarbonExceeded ? (
-                  <><CloudOff size={16} /> 狀態：碳預算超額，請優化空調設施</>
-                ) : (
-                  <><TrendingDown size={16} /> 狀態：減碳表現優異 (相比基準年)</>
-                )}
-              </div>
-              <div style={{ 
-                padding: '6px 14px', 
-                background: isCarbonExceeded ? 'rgba(239, 68, 68, 0.1)' : 'rgba(139, 92, 246, 0.1)',
-                borderRadius: '20px',
-                fontSize: '0.8rem',
-                color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)',
-                border: `1px solid ${isCarbonExceeded ? 'rgba(239, 68, 68, 0.2)' : 'rgba(139, 92, 246, 0.2)'}`,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}>
-                <Sparkles size={14} /> 
-                {isCarbonExceeded ? `需額外抵銷 ${Math.abs(carbonBudget - carbonProjected).toLocaleString()} kg` : `相當於救了 ${Math.max(0, Math.round((carbonBudget - carbonProjected) / 1.0))} 棵大樹`}
-              </div>
-            </div>
+            <div className="progress-container"><div className="progress-bar" style={{ width: `${electricPct}%`, backgroundColor: electricPct >= 90 ? 'var(--color-error)' : 'var(--color-electric)' }} /></div>
           </div>
-        </div>
-      </div>
 
-      {role !== 'guest' && (
-        <div className="glass-panel" style={{ marginTop: '2rem', padding: 0, overflow: 'hidden' }}>
-          <div onClick={() => setIsHistoryExpanded(!isHistoryExpanded)} style={{ padding: '1.5rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', borderBottom: isHistoryExpanded ? '1px solid rgba(255,255,255,0.05)' : 'none', background: isHistoryExpanded ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
-            <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.8rem' }}>{isHistoryExpanded ? <ChevronUp size={24} /> : <ChevronDown size={24} />}<span>{currentMonthStr} 歷史明細紀錄</span></h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              {records.length > 0 && isHistoryExpanded && <button onClick={(e) => { e.stopPropagation(); handleExportExcel(); }} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.1)', border: '1px solid var(--panel-border)', borderRadius: '8px', color: 'var(--text-main)', cursor: 'pointer' }}><Download size={16} /> 導出 Excel</button>}
-              <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{isHistoryExpanded ? '回縮明細' : `共 ${records.length} 筆紀錄 (點擊展開)`}</span>
+          <div className="glass-panel metric-card" ref={waterCardRef}>
+            <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 className="metric-title"><Droplet size={18} className="text-water" /> 用水量標竿</h3>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => handleCopyCardImage(waterCardRef, '用水')} className="card-action"><Camera size={16} /></button>
+                {role !== 'guest' && <button onClick={() => { setInputType('water'); setInputModalOpen(true); }} className="card-action text-water"><PenTool size={16} /></button>}
+                <button onClick={() => { setInputType('water'); setLimitModalOpen(true); }} className="card-action"><Target size={16} /></button>
+              </div>
             </div>
+            <div className="metric-value text-water" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '0.5rem' }}>
+              <div>
+                <span>{Math.round(currentUsage.water).toLocaleString()}</span><span className="metric-unit">/{wLimit.toLocaleString()} 度</span>
+              </div>
+              <div style={{ fontSize: '0.8rem', fontWeight: 500, maxWidth: '180px', lineHeight: '1.4', marginBottom: '8px' }}>
+                {getAITip('water', currentUsage.water, wLimit)}
+              </div>
+            </div>
+            <div style={{ fontSize: '0.75rem', marginBottom: '1rem' }}>
+              <span style={{ padding: '4px 8px', background: 'rgba(56, 189, 248, 0.1)', borderRadius: '4px', color: 'var(--color-water)', fontWeight: 'bold' }}>
+                本週建議上限 (第 {currentWeek} 週): {Math.round(wBench).toLocaleString()} 度
+              </span>
+            </div>
+            <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.8rem' }}>
+              {getDetailedAnalysis('water', currentUsage.water, wLimit)}
+            </div>
+            <div className="progress-container"><div className="progress-bar" style={{ width: `${waterPct}%`, backgroundColor: waterPct >= 90 ? 'var(--color-error)' : 'var(--color-water)' }} /></div>
           </div>
-          {isHistoryExpanded && (
-            <div style={{ padding: '2rem' }} className="fade-in">
-              {records.length === 0 ? <p className="text-muted">本月尚無明細紀錄。</p> : (
-                <div id="history-export-container">
-                  {electricList.length > 0 && (
-                    <div style={{ marginBottom: '2rem' }}>
-                      <h3 style={{ color: 'var(--color-electric)', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}><Zap size={18} /> 用電紀錄</h3>
-                      <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                          <thead>
-                            <tr style={{ borderBottom: '1px solid var(--panel-border)', color: 'var(--text-muted)' }}>
-                              <th style={{ padding: '0.8rem', textAlign: 'left' }}>日期</th>
-                              <th style={{ padding: '0.8rem', textAlign: 'center' }}>辦公大樓</th>
-                              <th style={{ padding: '0.8rem', textAlign: 'center' }}>倉儲大樓</th>
-                              <th style={{ padding: '0.8rem', textAlign: 'center' }}>低壓用電</th>
-                              <th style={{ padding: '0.8rem', textAlign: 'center' }}>1-1</th>
-                              <th style={{ padding: '0.8rem', textAlign: 'center' }}>1-2</th>
-                              <th style={{ padding: '0.8rem', textAlign: 'center' }}>1-3</th>
-                              <th style={{ padding: '0.8rem', textAlign: 'center' }}>2-1</th>
-                              <th style={{ padding: '0.8rem', textAlign: 'center' }}>AGV</th>
-                              {role !== 'guest' && <th style={{ padding: '0.8rem', textAlign: 'right' }}>操作</th>}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {getDisplayList(electricList, 'electric').map(r => (
-                              <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                <td style={{ padding: '0.8rem', textAlign: 'left' }}>{format(new Date(r.date), 'MM/dd')}</td>
-                                <td style={{ padding: '0.8rem', textAlign: 'center', color: 'var(--color-electric)' }}>{r.readings?.ml}</td>
-                                <td style={{ padding: '0.8rem', textAlign: 'center', color: 'var(--color-electric)' }}>{r.readings?.mp1}</td>
-                                <td style={{ padding: '0.8rem', textAlign: 'center', color: 'var(--color-electric)' }}>{r.readings?.mp}</td>
-                                <td style={{ padding: '0.8rem', textAlign: 'center', color: 'var(--color-electric)' }}>{r.readings?.kwh11}</td>
-                                <td style={{ padding: '0.8rem', textAlign: 'center', color: 'var(--color-electric)' }}>{r.readings?.kwh12}</td>
-                                <td style={{ padding: '0.8rem', textAlign: 'center', color: 'var(--color-electric)' }}>{r.readings?.kwh13}</td>
-                                <td style={{ padding: '0.8rem', textAlign: 'center', color: 'var(--color-electric)' }}>{r.readings?.kwh21}</td>
-                                <td style={{ padding: '0.8rem', textAlign: 'center', color: 'var(--color-electric)' }}>{r.readings?.agv}</td>
-                                {role !== 'guest' && (
-                                  <td style={{ padding: '0.8rem', textAlign: 'right' }}>
-                                    <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', marginRight: '10px' }}><Edit2 size={16} /></button>
-                                    <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={16} /></button>
-                                  </td>
-                                )}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
-                  {waterList.length > 0 && (
-                    <div style={{ marginBottom: '2rem' }}>
-                      <h3 style={{ color: 'var(--color-water)', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}><Droplet size={18} /> 自來水紀錄</h3>
-                      <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                          <thead>
-                            <tr style={{ borderBottom: '1px solid var(--panel-border)', color: 'var(--text-muted)' }}>
-                              <th style={{ padding: '0.8rem', textAlign: 'left' }}>日期</th>
-                              <th style={{ padding: '0.8rem', textAlign: 'center' }}>總水表(早)</th>
-                              <th style={{ padding: '0.8rem', textAlign: 'center' }}>總水表(夜)</th>
-                              {role !== 'guest' && <th style={{ padding: '0.8rem', textAlign: 'right' }}>操作</th>}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {getDisplayList(waterList, 'water').map(r => (
-                              <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                <td style={{ padding: '0.8rem', textAlign: 'left' }}>{format(new Date(r.date), 'MM/dd')}</td>
-                                <td style={{ padding: '0.8rem', textAlign: 'center', color: 'var(--color-water)' }}>{r.readings?.total}</td>
-                                <td style={{ padding: '0.8rem', textAlign: 'center', color: 'var(--color-water)' }}>{r.readings?.drink}</td>
-                                {role !== 'guest' && (
-                                  <td style={{ padding: '0.8rem', textAlign: 'right' }}>
-                                    <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', marginRight: '10px' }}><Edit2 size={16} /></button>
-                                    <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={16} /></button>
-                                  </td>
-                                )}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
-                  {rainList.length > 0 && (
-                    <div style={{ marginBottom: '2rem' }}>
-                      <h3 style={{ color: 'var(--color-rain)', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}><CloudRain size={18} /> 雨水回收紀錄</h3>
-                      <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                          <thead>
-                            <tr style={{ borderBottom: '1px solid var(--panel-border)', color: 'var(--text-muted)' }}>
-                              <th style={{ padding: '0.8rem', textAlign: 'left' }}>日期</th>
-                              <th style={{ padding: '0.8rem', textAlign: 'center' }}>雨水回收</th>
-                              {role !== 'guest' && <th style={{ padding: '0.8rem', textAlign: 'right' }}>操作</th>}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {getDisplayList(rainList, 'rain').map(r => (
-                              <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                <td style={{ padding: '0.8rem', textAlign: 'left' }}>{format(new Date(r.date), 'MM/dd')}</td>
-                                <td style={{ padding: '0.8rem', textAlign: 'center', color: 'var(--color-rain)' }}>{r.readings?.rain}</td>
-                                {role !== 'guest' && (
-                                  <td style={{ padding: '0.8rem', textAlign: 'right' }}>
-                                    <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', marginRight: '10px' }}><Edit2 size={16} /></button>
-                                    <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={16} /></button>
-                                  </td>
-                                )}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
+
+          <div className="glass-panel metric-card" ref={rainCardRef}>
+            <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 className="metric-title"><CloudRain size={18} className="text-rain" /> 雨水回收</h3>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => handleCopyCardImage(rainCardRef, '雨水')} className="card-action"><Camera size={16} /></button>
+                {role !== 'guest' && <button onClick={() => { setInputType('rain'); setInputModalOpen(true); }} className="card-action text-rain"><PenTool size={16} /></button>}
+              </div>
+            </div>
+            <div className="metric-value text-rain"><span>{Math.round(currentUsage.rain).toLocaleString()}</span><span className="metric-unit">度</span></div>
+            <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto' }}>本日降雨機率適中，系統持續回收。</div>
+          </div>
+
+          <div className="glass-panel metric-card carbon-card-full" style={{ background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(30, 41, 59, 0.7) 100%)', borderColor: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)', display: 'flex', boxShadow: `0 0 20px ${isCarbonExceeded ? 'rgba(239, 68, 68, 0.1)' : 'rgba(139, 92, 246, 0.1)'}`, padding: '2rem' }}>
+            <div className="carbon-main-info" style={{ flex: '0 0 300px' }}>
+              <h3 style={{ margin: 0, color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)', display: 'flex', alignItems: 'center', gap: '10px' }}><Globe size={20} /> 碳排量餘額</h3>
+              <div className="metric-value" style={{ color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)', margin: '1rem 0' }}>
+                <span style={{ fontSize: '3.5rem', fontWeight: 800 }}>{Math.abs(carbonBudget - carbonProjected).toLocaleString()}</span>
+                <span className="metric-unit" style={{ marginLeft: '10px' }}>kg CO2e</span>
+              </div>
+            </div>
+            <div style={{ flex: '1', paddingLeft: '2rem', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.9rem' }}>
+                <span>目標: {carbonBudget.toLocaleString()} kg</span>
+                <span style={{ color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)' }}>預計達成: {Math.round((carbonProjected/carbonBudget)*100)}%</span>
+              </div>
+              <div className="progress-container" style={{ height: '12px' }}><div className="progress-bar" style={{ width: `${Math.min(100, (carbonProjected/carbonBudget)*100)}%`, backgroundColor: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)' }} /></div>
+              <div style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ padding: '6px 12px', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '20px', fontSize: '0.85rem', color: 'var(--color-carbon)', border: '1px solid rgba(139, 92, 246, 0.2)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Leaf size={14} /> 換算救了 {Math.max(0, Math.round((carbonBudget - carbonProjected) / 1.0))} 棵樹
                 </div>
-              )}
+                <div style={{ fontSize: '0.9rem', color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)', fontWeight: 'bold' }}>
+                  {isCarbonExceeded ? '🚨 碳預算超額' : '✅ 減碳表現優異'}
+                </div>
+              </div>
             </div>
-          )}
+          </div>
         </div>
-      )}
+
+        {role !== 'guest' && (
+          <div className="glass-panel" style={{ marginTop: '2rem', padding: 0 }}>
+            <div onClick={() => setIsHistoryExpanded(!isHistoryExpanded)} style={{ padding: '1.5rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: isHistoryExpanded ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
+              <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.8rem' }}>{isHistoryExpanded ? <ChevronUp size={24} /> : <ChevronDown size={24} />} {currentMonthStr} 歷史紀錄</h2>
+              <button onClick={(e) => { e.stopPropagation(); handleExportExcel(); }} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}><Download size={16} /> 導出 Excel</button>
+            </div>
+            {isHistoryExpanded && (
+              <div style={{ padding: '0 2rem 2rem' }} className="fade-in">
+                {records.length === 0 ? <p className="text-muted">本月尚無紀錄。</p> : (
+                  <div style={{ marginTop: '1rem' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                      <thead><tr style={{ borderBottom: '1px solid var(--panel-border)', color: 'var(--text-muted)' }}><th style={{ padding: '0.8rem', textAlign: 'left' }}>日期</th><th style={{ padding: '0.8rem' }}>類型</th><th style={{ padding: '0.8rem', textAlign: 'right' }}>操作</th></tr></thead>
+                      <tbody>
+                        {getDisplayList(records).map(r => (
+                          <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <td style={{ padding: '0.8rem' }}>{format(new Date(r.date), 'MM/dd')}</td>
+                            <td style={{ padding: '0.8rem', textAlign: 'center' }}><span className={`badge badge-${r.type}`}>{r.type === 'electric' ? '用電' : r.type === 'water' ? '用水' : '雨水'}</span></td>
+                            <td style={{ padding: '0.8rem', textAlign: 'right' }}>
+                              <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', marginRight: '10px' }}><Edit2 size={14} /></button>
+                              <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       <DataInputModal isOpen={isInputModalOpen} onClose={() => setInputModalOpen(false)} fetchDashboardData={fetchDashboardData} defaultType={inputType} />
       <LimitSettingModal isOpen={isLimitModalOpen} onClose={() => setLimitModalOpen(false)} year={currentMonthStr.substring(0, 4)} type={inputType} fetchDashboardData={fetchDashboardData} />
-      <FactorSettingModal
-        isOpen={isFactorModalOpen}
-        onClose={() => setFactorModalOpen(false)}
-        currentFactor={electricFactor}
-        currentEmissionFactor={emissionFactor}
-        emissionHistory={emissionHistory}
-        currentMonthStr={currentMonthStr}
-        carbonGoals={carbonGoals}
-        fetchDashboardData={fetchDashboardData} 
-      />
+      <FactorSettingModal isOpen={isFactorModalOpen} onClose={() => setFactorModalOpen(false)} currentFactor={electricFactor} currentEmissionFactor={emissionFactor} emissionHistory={emissionHistory} currentMonthStr={currentMonthStr} carbonGoals={carbonGoals} fetchDashboardData={fetchDashboardData} />
       <EditRecordModal isOpen={!!editRecordData} onClose={() => setEditRecordData(null)} record={editRecordData} fetchDashboardData={fetchDashboardData} />
-    </div>
+    </>
   );
 };
 
