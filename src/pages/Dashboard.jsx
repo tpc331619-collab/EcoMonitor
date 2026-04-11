@@ -527,8 +527,22 @@ const Dashboard = () => {
                 <span style={{ fontSize: '3.5rem', fontWeight: 800 }}>{Math.round(currentUsage.electric * emissionFactor).toLocaleString()}</span>
                 <span className="metric-unit">/ {carbonBudget.toLocaleString()} kg CO2e</span>
               </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1.2rem', paddingLeft: '4px' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem', paddingLeft: '4px' }}>
                 💡 計算方式：累積用電 {Math.round(currentUsage.electric).toLocaleString()} 度 × 係數 {emissionFactor}
+              </div>
+              <div style={{ 
+                fontSize: '0.9rem', 
+                color: (currentUsage.electric * emissionFactor) > carbonBudget ? 'var(--color-error)' : isCarbonExceeded ? 'var(--color-warning)' : 'var(--color-success)', 
+                fontWeight: 'bold',
+                marginBottom: '1rem',
+                paddingLeft: '4px'
+              }}>
+                {(currentUsage.electric * emissionFactor) > carbonBudget 
+                  ? '🚨 碳預算已經用完' 
+                  : isCarbonExceeded 
+                    ? '⚠️ 預計月底會超標' 
+                    : '✅ 表現超棒！預測有剩餘'
+                }
               </div>
             </div>
             <div className="carbon-detail-info" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1.2rem' }}>
@@ -542,24 +556,9 @@ const Dashboard = () => {
                 </span>
               </div>
               <div className="progress-container" style={{ height: '12px' }}><div className="progress-bar" style={{ width: `${Math.min(100, (carbonProjected/carbonBudget)*100)}%`, backgroundColor: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)' }} /></div>
-              <div style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                  <div style={{ padding: '6px 12px', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '20px', fontSize: '0.85rem', color: 'var(--color-success)', border: '1px solid rgba(34, 197, 94, 0.2)', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-                    <Leaf size={14} /> 換算救了 {Math.max(0, Math.round((carbonBudget - Math.round(currentUsage.electric * emissionFactor)) / 1.0))} 棵樹
-                  </div>
-                  <div style={{ 
-                    fontSize: '0.9rem', 
-                    color: (currentUsage.electric * emissionFactor) > carbonBudget ? 'var(--color-error)' : isCarbonExceeded ? 'var(--color-warning)' : 'var(--color-success)', 
-                    fontWeight: 'bold',
-                    whiteSpace: 'nowrap'
-                  }}>
-                    {(currentUsage.electric * emissionFactor) > carbonBudget 
-                      ? '🚨 碳預算已經用完' 
-                      : isCarbonExceeded 
-                        ? '⚠️ 預計月底會超標' 
-                        : '✅ 表現超棒！預測有剩餘'
-                    }
-                  </div>
+              <div style={{ marginTop: '1.2rem', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <div style={{ padding: '6px 12px', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '20px', fontSize: '0.85rem', color: 'var(--color-success)', border: '1px solid rgba(34, 197, 94, 0.2)', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                  <Leaf size={14} /> 換算救了 {Math.max(0, Math.round((carbonBudget - Math.round(currentUsage.electric * emissionFactor)) / 1.0))} 棵樹
                 </div>
                 <div style={{ fontSize: '0.85rem', opacity: 0.9, fontWeight: '500', whiteSpace: 'nowrap' }}>
                   {isCarbonExceeded 
