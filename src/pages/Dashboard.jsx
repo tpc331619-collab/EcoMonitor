@@ -257,6 +257,10 @@ const Dashboard = () => {
 
   const getAITip = (type, used, limit) => {
     if (used === 0) return '⚡ 還沒開始記錄喔，等你輸入！';
+    if (type === 'rain') {
+      if (used > 10) return <span className="text-success">♻️ 回收效能優異，讚！</span>;
+      return <span className="text-rain" style={{ opacity: 0.8 }}>♻️ 持續穩定回收中...</span>;
+    }
     const pace = type === 'electric' ? ePace : wPace;
     const unitWord = type === 'electric' ? '耗電' : '用水';
     
@@ -474,11 +478,17 @@ const Dashboard = () => {
                 {role !== 'guest' && <button onClick={() => { setInputType('rain'); setInputModalOpen(true); }} className="card-action text-rain"><PenTool size={16} /></button>}
               </div>
             </div>
-            <div className="metric-value text-rain" style={{ display: 'flex', alignItems: 'baseline', gap: '15px', marginBottom: '1rem', flexWrap: 'wrap' }}>
+            <div className="metric-value text-rain" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
                 <span style={{ fontSize: '3rem', fontWeight: 800 }}>{Math.round(currentUsage.rain).toLocaleString()}</span>
                 <span className="metric-unit">度</span>
               </div>
+              <div style={{ fontSize: '0.8rem', fontWeight: 500 }}>
+                {getAITip('rain', currentUsage.rain)}
+              </div>
+            </div>
+            
+            <div style={{ marginBottom: '1rem' }}>
               <span style={{ 
                 padding: '4px 8px', 
                 background: 'rgba(34, 197, 94, 0.1)', 
@@ -488,13 +498,13 @@ const Dashboard = () => {
                 fontWeight: 'bold',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '6px',
-                marginBottom: '4px'
+                gap: '6px'
               }}>
                 <Target size={12} /> 年度累積: {Math.round(currentUsage.rainYearly).toLocaleString()} 度
               </span>
             </div>
             <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.8rem' }}>本日降雨機率適中，系統持續回收。</div>
+            <div className="progress-container"><div className="progress-bar" style={{ width: `${Math.min(100, (currentUsage.rain / (limits.rain || 10)) * 100)}%`, backgroundColor: 'var(--color-rain)' }} /></div>
           </div>
 
           <div className="glass-panel metric-card carbon-card-full" style={{ borderColor: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', boxShadow: `0 0 20px ${isCarbonExceeded ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.05)'}` }}>
