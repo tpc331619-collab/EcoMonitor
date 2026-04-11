@@ -400,3 +400,22 @@ p {
   text-align: center;
   padding: 3rem 2rem;
 }
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .metric-value {
+    font-size: 2rem !important;
+  }
+  
+  .metric-unit {
+    font-size: 0.85rem;
+  }
+
+  .metric-card {
+    padding: 1.2rem;
+  }
+
+  .metric-title {
+    line-height: 1.4;
+  }
+}

@@ -493,24 +493,25 @@ const Dashboard = () => {
 
   return (
     <div className="fade-in">
-      <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ flex: '1', minWidth: '300px' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '1.2rem', flexWrap: 'wrap' }}>
+      <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '0.8rem' }}>
+        <div style={{ flex: '1', minWidth: '100%', marginBottom: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '1rem', flexWrap: 'wrap' }}>
             <h1 style={{ 
               margin: 0, 
-              fontSize: '1.8rem', 
+              fontSize: 'clamp(1.4rem, 5vw, 1.8rem)', 
               fontWeight: '800',
               background: 'linear-gradient(to bottom, #ffffff, #94a3b8)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
-              letterSpacing: '-0.5px'
+              letterSpacing: '-0.5px',
+              whiteSpace: 'nowrap'
             }}>
-              iRMC-資源監控
+              Eco Utility Pulse
             </h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: 0.8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <WeatherIcon />
-                <span>{weather.desc} {weather.temp}°C</span>
+                <span style={{ color: '#fbbf24', fontWeight: '600' }}>{weather.desc} {weather.temp}°C</span>
               </div>
               <span style={{ opacity: 0.3 }}>|</span>
               <span>{format(new Date(), 'yyyy/MM/dd')}</span>
@@ -626,15 +627,15 @@ const Dashboard = () => {
           animation: ePace >= 1.25 ? 'pulse-red 2s infinite' : 'none'
         }}>
           <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 className="metric-title" style={{ margin: 0 }}><Zap className="text-electric" /> {currentMonthStr.replace('-', '/')} 月份累計用電量</h3>
-            <div style={{ display: 'flex', gap: '0.8rem' }}>
-              <button onClick={() => handleCopyCardImage(electricCardRef, '用電')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }} title="複製圖片"><Camera size={18} /></button>
-              <div style={{ display: 'flex', gap: '0.8rem' }}>
+            <h3 className="metric-title" style={{ margin: 0, fontSize: 'clamp(0.9rem, 3.5vw, 1.1rem)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Zap className="text-electric" /> {currentMonthStr.replace('-', '/')} 月份累計用電量</h3>
+            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+              <button onClick={() => handleCopyCardImage(electricCardRef, '用電')} style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }} title="複製圖片"><Camera size={16} /></button>
+              <div style={{ display: 'flex', gap: '0.4rem' }}>
                 {role === 'admin' && (
-                  <><button onClick={() => setFactorModalOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><Calculator size={18} className="text-electric" /></button>
-                    <button onClick={() => { setInputType('electric'); setLimitModalOpen(true); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><Settings size={18} className="text-electric" /></button></>
+                  <><button onClick={() => setFactorModalOpen(true)} style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><Calculator size={16} className="text-electric" /></button>
+                    <button onClick={() => { setInputType('electric'); setLimitModalOpen(true); }} style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><Settings size={16} className="text-electric" /></button></>
                 )}
-                {role !== 'guest' && <button onClick={() => { setInputType('electric'); setInputModalOpen(true); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><PenTool size={18} className="text-electric" /></button>}
+                {role !== 'guest' && <button onClick={() => { setInputType('electric'); setInputModalOpen(true); }} style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><PenTool size={16} className="text-electric" /></button>}
               </div>
             </div>
           </div>
@@ -642,10 +643,24 @@ const Dashboard = () => {
             <span style={{ fontSize: '3rem' }}>{Math.round(currentUsage.electric).toLocaleString()}</span>
             <span className="metric-unit">/ {limits.electric.toLocaleString()} 度</span>
           </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between' }}>
-            <span>本週預算 (第 {currentWeek} 週): {Math.round(eBench).toLocaleString()} 度</span>
-            <span style={{ color: ePace > 1 ? 'var(--color-error)' : 'var(--color-success)' }}>
-              {ePace > 1 ? `超支 ${Math.round((ePace - 1) * 100)}%` : '進度正常'}
+          <div style={{ fontSize: '0.8rem', marginBottom: '1.2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+            <span style={{ 
+              padding: '4px 10px', 
+              background: 'rgba(251, 191, 36, 0.1)', 
+              borderRadius: '6px',
+              color: 'var(--color-electric)',
+              fontWeight: '700',
+              border: '1px solid rgba(251, 191, 36, 0.2)',
+              fontSize: '0.75rem'
+            }}>
+              本週建議上限 (第 {currentWeek} 週): {Math.round(eBench).toLocaleString()} 度
+            </span>
+            <span style={{ 
+              color: ePace > 1 ? 'var(--color-error)' : 'var(--color-success)',
+              fontWeight: '800',
+              fontSize: '0.85rem'
+            }}>
+              {ePace > 1 ? `🚨 已超標 ${Math.round((ePace - 1) * 100)}%` : '✅ 進度正常'}
             </span>
           </div>
           <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto' }}>{getAITip('electric', currentUsage.electric, limits.electric)}</div>
@@ -657,12 +672,12 @@ const Dashboard = () => {
           boxShadow: wPace >= 1.25 ? '0 0 20px rgba(239, 68, 68, 0.2)' : 'none'
         }}>
           <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 className="metric-title" style={{ margin: 0 }}><Droplet className="text-water" /> {currentMonthStr.replace('-', '/')} 月份累計用水量</h3>
-            <div style={{ display: 'flex', gap: '0.8rem' }}>
-              <button onClick={() => handleCopyCardImage(waterCardRef, '用水')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }} title="複製圖片"><Camera size={18} /></button>
-              <div style={{ display: 'flex', gap: '0.8rem' }}>
-                {role === 'admin' && <button onClick={() => { setInputType('water'); setLimitModalOpen(true); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><Settings size={18} className="text-water" /></button>}
-                {role !== 'guest' && <button onClick={() => { setInputType('water'); setInputModalOpen(true); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><PenTool size={18} className="text-water" /></button>}
+            <h3 className="metric-title" style={{ margin: 0, fontSize: 'clamp(0.9rem, 3.5vw, 1.1rem)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Droplet className="text-water" /> {currentMonthStr.replace('-', '/')} 月份累計用水量</h3>
+            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+              <button onClick={() => handleCopyCardImage(waterCardRef, '用水')} style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }} title="複製圖片"><Camera size={16} /></button>
+              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                {role === 'admin' && <button onClick={() => { setInputType('water'); setLimitModalOpen(true); }} style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><Settings size={16} className="text-water" /></button>}
+                {role !== 'guest' && <button onClick={() => { setInputType('water'); setInputModalOpen(true); }} style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><PenTool size={16} className="text-water" /></button>}
               </div>
             </div>
           </div>
@@ -670,10 +685,24 @@ const Dashboard = () => {
             <span style={{ fontSize: '3rem' }}>{Math.round(currentUsage.water).toLocaleString()}</span>
             <span className="metric-unit">/ {limits.water.toLocaleString()} 度</span>
           </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between' }}>
-            <span>本週預算 (第 {currentWeek} 週): {Math.round(wBench).toLocaleString()} 度</span>
-            <span style={{ color: wPace > 1 ? 'var(--color-error)' : 'var(--color-success)' }}>
-              {wPace > 1 ? `超支 ${Math.round((wPace - 1) * 100)}%` : '進度正常'}
+          <div style={{ fontSize: '0.8rem', marginBottom: '1.2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+            <span style={{ 
+              padding: '4px 10px', 
+              background: 'rgba(56, 189, 248, 0.1)', 
+              borderRadius: '6px',
+              color: 'var(--color-water)',
+              fontWeight: '700',
+              border: '1px solid rgba(56, 189, 248, 0.2)',
+              fontSize: '0.75rem'
+            }}>
+              本週建議上限 (第 {currentWeek} 週): {Math.round(wBench).toLocaleString()} 度
+            </span>
+            <span style={{ 
+              color: wPace > 1 ? 'var(--color-error)' : 'var(--color-success)',
+              fontWeight: '800',
+              fontSize: '0.85rem'
+            }}>
+              {wPace > 1 ? `🚨 已超標 ${Math.round((wPace - 1) * 100)}%` : '✅ 進度正常'}
             </span>
           </div>
           <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto' }}>{getAITip('water', currentUsage.water, limits.water)}</div>
@@ -682,10 +711,10 @@ const Dashboard = () => {
 
         <div className="glass-panel metric-card" ref={rainCardRef}>
           <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 className="metric-title" style={{ margin: 0 }}><CloudRain className="text-rain" /> {currentMonthStr.replace('-', '/')} 月份雨水回收量</h3>
-            <div style={{ display: 'flex', gap: '0.8rem' }}>
-              <button onClick={() => handleCopyCardImage(rainCardRef, '雨水')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }} title="複製圖片"><Camera size={18} /></button>
-              {role !== 'guest' && <button onClick={() => { setInputType('rain'); setInputModalOpen(true); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><PenTool size={18} className="text-rain" /></button>}
+            <h3 className="metric-title" style={{ margin: 0, fontSize: 'clamp(0.9rem, 3.5vw, 1.1rem)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CloudRain className="text-rain" /> {currentMonthStr.replace('-', '/')} 月份雨水回收量</h3>
+            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+              <button onClick={() => handleCopyCardImage(rainCardRef, '雨水')} style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }} title="複製圖片"><Camera size={16} /></button>
+              {role !== 'guest' && <button onClick={() => { setInputType('rain'); setInputModalOpen(true); }} style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><PenTool size={16} className="text-rain" /></button>}
             </div>
           </div>
           <div className="metric-value text-rain"><span style={{ fontSize: '3rem' }}>{Math.round(currentUsage.rain).toLocaleString()}</span><span className="metric-unit">度</span></div>
