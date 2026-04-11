@@ -23,6 +23,7 @@ const Dashboard = () => {
   const [carbonGoals, setCarbonGoals] = useState({ reductionTarget: 5, baseYearAvg: 1000 });
   const [records, setRecords] = useState([]);
   const [electricFactor, setElectricFactor] = useState(4.233);
+  const [electricBaseOffset, setElectricBaseOffset] = useState(0);
   const [emissionFactor, setEmissionFactor] = useState(0.495);
   const [emissionHistory, setEmissionHistory] = useState({ '2000-01': 0.495 });
 
@@ -114,11 +115,14 @@ const Dashboard = () => {
 
       const limitsRef = doc(db, `settings_${currentYear}`, `limits_${currentMonthNum}`);
       const factorSnap = await getDoc(doc(db, "settings", "electric_factor"));
+      
       let loadedMeterFactor = 4.233;
+      let loadedBaseOffset = 0;
 
       if (factorSnap.exists()) {
         const fdata = factorSnap.data();
         loadedMeterFactor = Number(fdata.meter_factor || fdata.value) || 4.233;
+        loadedBaseOffset = Number(fdata.base_offset) || 0;
         let rawHistory = fdata.emission_history || {};
         if (Array.isArray(rawHistory)) {
           const migratedMap = {};
@@ -126,6 +130,7 @@ const Dashboard = () => {
           rawHistory = migratedMap;
         }
         setElectricFactor(loadedMeterFactor);
+        setElectricBaseOffset(loadedBaseOffset);
         setEmissionHistory(rawHistory);
         const sortedMonths = Object.keys(rawHistory).sort((a, b) => b.localeCompare(a));
         const activeMonth = sortedMonths.find(m => m <= currentMonthStr) || sortedMonths[sortedMonths.length - 1];
@@ -172,8 +177,8 @@ const Dashboard = () => {
         const latest = electricRecords[electricRecords.length - 1].readings;
         const totalBase = (base.ml || 0)*1000 + (base.mp1 || 0)*1000 + (base.mp || 0)*1000 + (base.kwh11 || 0) + (base.kwh12 || 0) + (base.kwh13 || 0) + (base.kwh21 || 0) + (base.agv || 0);
         const totalLatest = (latest.ml || 0)*1000 + (latest.mp1 || 0)*1000 + (latest.mp || 0)*1000 + (latest.kwh11 || 0) + (latest.kwh12 || 0) + (latest.kwh13 || 0) + (latest.kwh21 || 0) + (latest.agv || 0);
-        e = (totalLatest - totalBase) * loadedMeterFactor;
-        if (electricRecords.length === 1) e = totalBase * loadedMeterFactor;
+        e = (totalLatest - totalBase) * loadedMeterFactor + loadedBaseOffset;
+        if (electricRecords.length === 1) e = loadedBaseOffset; 
       }
 
       let w = 0;
@@ -240,11 +245,12 @@ const Dashboard = () => {
   const isCarbonExceeded = carbonProjected > carbonBudget;
 
   const getAITip = (type, used, limit) => {
-    if (used === 0) return '⚡ 系統待命中...';
+    if (used === 0) return '⚡ 還沒開始記錄喔，等你輸入！';
     const pace = type === 'electric' ? ePace : wPace;
-    if (pace > 1.2) return <span className="text-error">🚨 異常超標</span>;
-    if (pace > 1.05) return <span className="text-warning">⚠️ 些微超過</span>;
-    return <span className="text-success">✅ 狀態正常</span>;
+    if (pace > 1.1) return <span className="text-error">🚨 嚴重超標了！快看看哪裡在耗電</span>;
+    if (pace > 1.0) return <span className="text-warning">⚠️ 已經超標囉，要稍微管控一下</span>;
+    if (pace < 0.7) return <span className="text-success">✅ 還有很多空間可以用喔！</span>;
+    return <span className="text-success">✅ 進度掌握得很好，讚！</span>;
   };
 
   const getDetailedAnalysis = (type, used, limit) => {
@@ -391,9 +397,9 @@ const Dashboard = () => {
               </div>
             </div>
             <div style={{ fontSize: '0.75rem', marginBottom: '1rem' }}>
-              <span style={{ padding: '4px 8px', background: 'rgba(251, 191, 36, 0.1)', borderRadius: '4px', color: 'var(--color-electric)', fontWeight: 'bold' }}>
-                本週建議上限 (第 {currentWeek} 週): {Math.round(eBench).toLocaleString()} 度
-              </span>
+              <div className="text-warning" style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>
+                本週建議: {Math.round(eBench).toLocaleString()} 度
+              </div>
             </div>
             <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.8rem' }}>
               {getDetailedAnalysis('electric', currentUsage.electric, eLimit)}
@@ -636,7 +642,7 @@ const Dashboard = () => {
 
       <DataInputModal isOpen={isInputModalOpen} onClose={() => setInputModalOpen(false)} fetchDashboardData={fetchDashboardData} defaultType={inputType} />
       <LimitSettingModal isOpen={isLimitModalOpen} onClose={() => setLimitModalOpen(false)} year={currentMonthStr.substring(0, 4)} type={inputType} fetchDashboardData={fetchDashboardData} />
-      <FactorSettingModal isOpen={isFactorModalOpen} onClose={() => setFactorModalOpen(false)} currentFactor={electricFactor} currentEmissionFactor={emissionFactor} emissionHistory={emissionHistory} currentMonthStr={currentMonthStr} carbonGoals={carbonGoals} fetchDashboardData={fetchDashboardData} />
+      <FactorSettingModal isOpen={isFactorModalOpen} onClose={() => setFactorModalOpen(false)} currentFactor={electricFactor} currentBaseOffset={electricBaseOffset} currentEmissionFactor={emissionFactor} emissionHistory={emissionHistory} currentMonthStr={currentMonthStr} carbonGoals={carbonGoals} fetchDashboardData={fetchDashboardData} />
       <EditRecordModal isOpen={!!editRecordData} onClose={() => setEditRecordData(null)} record={editRecordData} fetchDashboardData={fetchDashboardData} />
     </>
   );
