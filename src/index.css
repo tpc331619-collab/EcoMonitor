@@ -520,50 +520,71 @@ p {
   }
 }
 
-/* Carbon Card Full Width for Desktop */
+/* Carbon Card Full Width for Desktop - Tight Layout */
 @media (min-width: 1025px) {
   .carbon-card-full {
     grid-column: 1 / -1 !important;
-    min-height: 200px;
-    padding: 2.5rem 4rem !important;
-    gap: 0 !important;
+    min-height: 160px !important;
+    padding: 1.5rem 2.5rem !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 0 !important; /* 原則上改由內部元素控制間距 */
     background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(26, 28, 35, 0.85) 100%) !important;
     border-color: var(--color-success) !important;
     box-shadow: 0 0 30px rgba(34, 197, 94, 0.1);
   }
   
   .carbon-main-info {
-    flex: 0 0 350px !important;
+    flex: 0 0 auto !important;
+    padding-right: 3rem !important;
+    border-right: 1px solid rgba(255,255,255,0.1) !important;
+    height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 
   .carbon-detail-info {
-    flex: 1 !important;
-    padding-left: 2.5rem !important;
-    border-left: 1px solid rgba(255,255,255,0.1) !important;
+    flex: 0 1 800px !important; /* 限制細節區最大寬度，不再無限拉長 */
+    padding-left: 3rem !important;
+    border-left: none !important;
   }
 }
 
-/* Mobile Carbon Card Fix */
-@media (max-width: 768px) {
+/* Tablet & Mobile Carbon Card Fix (Covering 0px to 1024px) */
+@media (max-width: 1024px) {
   .carbon-card-full {
-    min-height: auto !important;
+    min-height: 0 !important; /* 絕對不能有固定高度 */
     padding: 1.25rem !important;
-    gap: 1rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important; /* 極小間距縮減空隙 */
   }
   
   .carbon-main-info {
     flex: none !important;
     width: 100% !important;
-    margin-bottom: 0.5rem;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* 縮小手機版數字大小以壓縮空間 */
+  .carbon-main-info .metric-value span {
+    font-size: 2.8rem !important;
   }
 
   .carbon-detail-info {
     flex: none !important;
     width: 100% !important;
     padding-left: 0 !important;
-    padding-top: 1rem !important;
+    padding-top: 0.75rem !important;
     border-left: none !important;
-    border-top: 1px solid rgba(255,255,255,0.1) !important;
+    border-top: 1px solid rgba(255,255,255,0.08) !important;
+    margin-top: 0.25rem !important;
   }
 
   .limit-grid {

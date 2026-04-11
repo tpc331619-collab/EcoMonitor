@@ -336,8 +336,10 @@ const Dashboard = () => {
         <div className="metric-grid">
           <div className="glass-panel metric-card" ref={electricCardRef}>
             <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 className="metric-title"><Zap size={18} className="text-electric" /> 用電量標竿</h3>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <h3 className="text-electric" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Zap size={20} /> {currentMonthStr.replace('-', '/')} 累積用電量
+              </h3>
+              <div className="card-actions" style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => handleCopyCardImage(electricCardRef, '用電')} className="card-action"><Camera size={16} /></button>
                 <button onClick={() => setFactorModalOpen(true)} className="card-action"><Calculator size={16} /></button>
                 {role !== 'guest' && <button onClick={() => { setInputType('electric'); setInputModalOpen(true); }} className="card-action text-electric"><PenTool size={16} /></button>}
@@ -365,8 +367,10 @@ const Dashboard = () => {
 
           <div className="glass-panel metric-card" ref={waterCardRef}>
             <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 className="metric-title"><Droplet size={18} className="text-water" /> 用水量標竿</h3>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <h3 className="text-water" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Droplet size={20} /> {currentMonthStr.replace('-', '/')} 累積用水量
+              </h3>
+              <div className="card-actions" style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => handleCopyCardImage(waterCardRef, '用水')} className="card-action"><Camera size={16} /></button>
                 {role !== 'guest' && <button onClick={() => { setInputType('water'); setInputModalOpen(true); }} className="card-action text-water"><PenTool size={16} /></button>}
                 <button onClick={() => { setInputType('water'); setLimitModalOpen(true); }} className="card-action"><Target size={16} /></button>
@@ -393,8 +397,10 @@ const Dashboard = () => {
 
           <div className="glass-panel metric-card" ref={rainCardRef}>
             <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 className="metric-title"><CloudRain size={18} className="text-rain" /> 雨水回收</h3>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <h3 className="text-rain" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CloudRain size={20} /> {currentMonthStr.replace('-', '/')} 累積雨水回收量
+              </h3>
+              <div className="card-actions" style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => handleCopyCardImage(rainCardRef, '雨水')} className="card-action"><Camera size={16} /></button>
                 {role !== 'guest' && <button onClick={() => { setInputType('rain'); setInputModalOpen(true); }} className="card-action text-rain"><PenTool size={16} /></button>}
               </div>
@@ -405,7 +411,7 @@ const Dashboard = () => {
 
           <div className="glass-panel metric-card carbon-card-full" style={{ borderColor: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', boxShadow: `0 0 20px ${isCarbonExceeded ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.05)'}` }}>
             <div className="carbon-main-info">
-              <h3 style={{ margin: 0, color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '10px' }}><Globe size={20} /> 碳排量餘額</h3>
+              <h3 style={{ margin: 0, color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '10px' }}><Globe size={20} /> {currentMonthStr.replace('-', '/')} 碳排量餘額</h3>
               <div className="metric-value" style={{ color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', margin: '1rem 0' }}>
                 <span style={{ fontSize: '3.5rem', fontWeight: 800 }}>{Math.abs(carbonBudget - carbonProjected).toLocaleString()}</span>
                 <span className="metric-unit" style={{ marginLeft: '10px' }}>kg CO2e</span>
