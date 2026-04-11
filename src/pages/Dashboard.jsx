@@ -247,7 +247,9 @@ const Dashboard = () => {
   const getAITip = (type, used, limit) => {
     if (used === 0) return '⚡ 還沒開始記錄喔，等你輸入！';
     const pace = type === 'electric' ? ePace : wPace;
-    if (pace > 1.1) return <span className="text-error">🚨 嚴重超標了！快看看哪裡在耗電</span>;
+    const unitWord = type === 'electric' ? '耗電' : '用水';
+    
+    if (pace > 1.1) return <span className="text-error">🚨 嚴重超標了！快看看哪裡在{unitWord}</span>;
     if (pace > 1.0) return <span className="text-warning">⚠️ 已經超標囉，要稍微管控一下</span>;
     if (pace < 0.7) return <span className="text-success">✅ 還有很多空間可以用喔！</span>;
     return <span className="text-success">✅ 進度掌握得很好，讚！</span>;
@@ -388,17 +390,22 @@ const Dashboard = () => {
                 )}
               </div>
             </div>
-            <div className="metric-value text-electric" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '0.5rem' }}>
-              <div>
+            <div className="metric-value" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '8px', marginBottom: '0.5rem' }}>
+              <div style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'baseline', color: 'var(--color-electric)' }}>
                 <span>{Math.round(currentUsage.electric).toLocaleString()}</span><span className="metric-unit">/{eLimit.toLocaleString()} 度</span>
               </div>
-              <div style={{ fontSize: '0.8rem', fontWeight: 500, maxWidth: '180px', lineHeight: '1.4', marginBottom: '8px' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 500, maxWidth: '200px', lineHeight: '1.4', marginBottom: '8px' }}>
                 {getAITip('electric', currentUsage.electric, eLimit)}
               </div>
             </div>
             <div style={{ fontSize: '0.75rem', marginBottom: '1rem' }}>
               <div className="text-warning" style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>
-                本週建議: {Math.round(eBench).toLocaleString()} 度
+                {ePace < 0.6 
+                  ? `進度超前！這禮拜就算用到 ${Math.round(eBench).toLocaleString()} 度也還是綠燈喔` 
+                  : ePace > 1.0 
+                    ? `這禮拜原本希望控制在: ${Math.round(eBench).toLocaleString()} 度以內`
+                    : `這禮拜最好別超過: ${Math.round(eBench).toLocaleString()} 度`
+                }
               </div>
             </div>
             <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.8rem' }}>
@@ -422,18 +429,23 @@ const Dashboard = () => {
                 )}
               </div>
             </div>
-            <div className="metric-value text-water" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '0.5rem' }}>
-              <div>
+            <div className="metric-value" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '8px', marginBottom: '0.5rem' }}>
+              <div style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'baseline', color: 'var(--color-water)' }}>
                 <span>{Math.round(currentUsage.water).toLocaleString()}</span><span className="metric-unit">/{wLimit.toLocaleString()} 度</span>
               </div>
-              <div style={{ fontSize: '0.8rem', fontWeight: 500, maxWidth: '180px', lineHeight: '1.4', marginBottom: '8px' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 500, maxWidth: '200px', lineHeight: '1.4', marginBottom: '8px' }}>
                 {getAITip('water', currentUsage.water, wLimit)}
               </div>
             </div>
             <div style={{ fontSize: '0.75rem', marginBottom: '1rem' }}>
-              <span style={{ padding: '4px 8px', background: 'rgba(56, 189, 248, 0.1)', borderRadius: '4px', color: 'var(--color-water)', fontWeight: 'bold' }}>
-                本週建議上限 (第 {currentWeek} 週): {Math.round(wBench).toLocaleString()} 度
-              </span>
+              <div className="text-secondary" style={{ fontSize: '0.75rem', color: '#60a5fa', fontWeight: 'bold' }}>
+                {wPace < 0.6 
+                  ? `怎麼都沒在用水？這週其實可以用到: ${Math.round(wBench).toLocaleString()} 度` 
+                  : wPace > 1.0 
+                    ? `這禮拜原本希望控制在: ${Math.round(wBench).toLocaleString()} 度以內`
+                    : `這禮拜最好別超過: ${Math.round(wBench).toLocaleString()} 度`
+                }
+              </div>
             </div>
             <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.8rem' }}>
               {getDetailedAnalysis('water', currentUsage.water, wLimit)}
