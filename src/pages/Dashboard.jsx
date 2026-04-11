@@ -542,28 +542,29 @@ const Dashboard = () => {
                 </span>
               </div>
               <div className="progress-container" style={{ height: '12px' }}><div className="progress-bar" style={{ width: `${Math.min(100, (carbonProjected/carbonBudget)*100)}%`, backgroundColor: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)' }} /></div>
-              <div style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ padding: '6px 12px', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '20px', fontSize: '0.85rem', color: 'var(--color-success)', border: '1px solid rgba(34, 197, 94, 0.2)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                  <div style={{ padding: '6px 12px', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '20px', fontSize: '0.85rem', color: 'var(--color-success)', border: '1px solid rgba(34, 197, 94, 0.2)', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                     <Leaf size={14} /> 換算救了 {Math.max(0, Math.round((carbonBudget - Math.round(currentUsage.electric * emissionFactor)) / 1.0))} 棵樹
                   </div>
                   <div style={{ 
                     fontSize: '0.9rem', 
                     color: (currentUsage.electric * emissionFactor) > carbonBudget ? 'var(--color-error)' : isCarbonExceeded ? 'var(--color-warning)' : 'var(--color-success)', 
-                    fontWeight: 'bold' 
+                    fontWeight: 'bold',
+                    whiteSpace: 'nowrap'
                   }}>
                     {(currentUsage.electric * emissionFactor) > carbonBudget 
-                      ? '🚨 警報！碳預算已經用完了' 
+                      ? '🚨 碳預算已經用完' 
                       : isCarbonExceeded 
-                        ? '⚠️ 目前沒超標，但月底預計會多用喔！' 
-                        : '✅ 表現太棒了！月底預測有剩餘'
+                        ? '⚠️ 預計月底會超標' 
+                        : '✅ 表現超棒！預測有剩餘'
                     }
                   </div>
                 </div>
-                <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>
+                <div style={{ fontSize: '0.85rem', opacity: 0.9, fontWeight: '500', whiteSpace: 'nowrap' }}>
                   {isCarbonExceeded 
-                    ? `月底預估超額: ${Math.round(carbonProjected - carbonBudget).toLocaleString()} kg` 
-                    : `預計月底剩餘: ${Math.round(carbonBudget - carbonProjected).toLocaleString()} kg`
+                    ? `預估超額: ${Math.round(carbonProjected - carbonBudget).toLocaleString()} kg` 
+                    : `預計剩餘: ${Math.round(carbonBudget - carbonProjected).toLocaleString()} kg`
                   }
                 </div>
               </div>

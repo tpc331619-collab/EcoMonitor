@@ -205,9 +205,9 @@ const DataInputModal = ({ isOpen, onClose, fetchDashboardData, defaultType }) =>
     
     return (
       <div className="form-group" style={{ marginBottom: 0 }} key={f.key}>
-        <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
-          {f.label} 
-          {lastRecord && <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}> (上次: {prevReading})</span>}
+        <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '4px', alignItems: 'flex-end', lineHeight: '1.4' }}>
+          <span>{f.label}</span>
+          {lastRecord && <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', whiteSpace: 'nowrap' }}> (上次: {prevReading})</span>}
         </label>
         <input 
           type="number" 
@@ -252,7 +252,7 @@ const DataInputModal = ({ isOpen, onClose, fetchDashboardData, defaultType }) =>
             <input type="date" className="form-control" value={date} onChange={e => setDate(e.target.value)} required />
           </div>
 
-          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1.2rem', borderRadius: '12px', marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: type === 'electric' ? '1fr 1fr' : '1fr', gap: '1rem' }}>
+          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1.2rem', borderRadius: '12px', marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: type === 'electric' ? 'repeat(auto-fit, minmax(220px, 1fr))' : '1fr', gap: '1rem' }}>
             <div style={{ gridColumn: '1 / -1', color: type === 'electric' ? 'var(--color-electric)' : type === 'water' ? 'var(--color-water)' : 'var(--color-rain)', fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Info size={16} /> 請輸入當日表累積讀數：
             </div>
