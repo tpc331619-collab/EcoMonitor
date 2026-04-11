@@ -19,10 +19,12 @@ const Sidebar = () => {
           <span>儀表板</span>
         </NavLink>
         
-        <NavLink to="/history" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <History size={18} />
-          <span>歷史紀錄</span>
-        </NavLink>
+        {role !== 'guest' && (
+          <NavLink to="/history" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+            <History size={18} />
+            <span>歷史紀錄</span>
+          </NavLink>
+        )}
         
         {role === 'admin' && (
           <NavLink to="/admin" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>

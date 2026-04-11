@@ -341,9 +341,13 @@ const Dashboard = () => {
               </h3>
               <div className="card-actions" style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => handleCopyCardImage(electricCardRef, '用電')} className="card-action"><Camera size={16} /></button>
-                <button onClick={() => setFactorModalOpen(true)} className="card-action"><Calculator size={16} /></button>
-                {role !== 'guest' && <button onClick={() => { setInputType('electric'); setInputModalOpen(true); }} className="card-action text-electric"><PenTool size={16} /></button>}
-                <button onClick={() => { setInputType('electric'); setLimitModalOpen(true); }} className="card-action"><Target size={16} /></button>
+                {role !== 'guest' && (
+                  <>
+                    <button onClick={() => setFactorModalOpen(true)} className="card-action"><Calculator size={16} /></button>
+                    <button onClick={() => { setInputType('electric'); setInputModalOpen(true); }} className="card-action text-electric"><PenTool size={16} /></button>
+                    <button onClick={() => { setInputType('electric'); setLimitModalOpen(true); }} className="card-action"><Target size={16} /></button>
+                  </>
+                )}
               </div>
             </div>
             <div className="metric-value text-electric" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '0.5rem' }}>
@@ -372,8 +376,12 @@ const Dashboard = () => {
               </h3>
               <div className="card-actions" style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => handleCopyCardImage(waterCardRef, '用水')} className="card-action"><Camera size={16} /></button>
-                {role !== 'guest' && <button onClick={() => { setInputType('water'); setInputModalOpen(true); }} className="card-action text-water"><PenTool size={16} /></button>}
-                <button onClick={() => { setInputType('water'); setLimitModalOpen(true); }} className="card-action"><Target size={16} /></button>
+                {role !== 'guest' && (
+                  <>
+                    <button onClick={() => { setInputType('water'); setInputModalOpen(true); }} className="card-action text-water"><PenTool size={16} /></button>
+                    <button onClick={() => { setInputType('water'); setLimitModalOpen(true); }} className="card-action"><Target size={16} /></button>
+                  </>
+                )}
               </div>
             </div>
             <div className="metric-value text-water" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '0.5rem' }}>
