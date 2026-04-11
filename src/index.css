@@ -11,6 +11,8 @@
   --color-error: #ef4444;
   --color-warning: #f97316;
   --color-success: #10b981;
+  --color-carbon: #8b5cf6;
+  --carbon-glow: rgba(139, 92, 246, 0.4);
 }
 
 body {
@@ -265,6 +267,13 @@ p {
   margin-bottom: 2rem;
 }
 
+@media (min-width: 1025px) {
+  .metric-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+
 .metric-card {
   display: flex;
   flex-direction: column;
@@ -401,21 +410,49 @@ p {
   padding: 3rem 2rem;
 }
 
-/* Responsive adjustments */
+/* Responsive adjustments for Mobile */
 @media (max-width: 480px) {
   .metric-value {
     font-size: 2rem !important;
   }
-  
   .metric-unit {
     font-size: 0.85rem;
   }
-
   .metric-card {
     padding: 1.2rem;
   }
-
   .metric-title {
     line-height: 1.4;
   }
 }
+
+/* Carbon Card Full Width for Desktop */
+@media (min-width: 1025px) {
+  .carbon-card-full {
+    grid-column: 1 / -1 !important;
+    min-height: 200px;
+    flex-direction: row !important;
+    align-items: center !important;
+    padding: 2.5rem 4rem !important;
+    gap: 0 !important;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(30, 41, 59, 0.7) 100%) !important;
+    border-color: var(--carbon-glow) !important;
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.1);
+  }
+  
+  .carbon-main-info {
+    flex: 0 0 350px;
+  }
+
+  .carbon-card-full .progress-section {
+    margin-top: 0 !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    padding-left: 5rem;
+    height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex: 1;
+  }
+}
+

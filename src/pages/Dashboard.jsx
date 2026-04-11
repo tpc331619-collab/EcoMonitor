@@ -506,7 +506,7 @@ const Dashboard = () => {
               letterSpacing: '-0.5px',
               whiteSpace: 'nowrap'
             }}>
-              Eco Utility Pulse
+              Eco Utility Pulse AI 智慧資源監控
             </h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -721,52 +721,81 @@ const Dashboard = () => {
           <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto' }}>{getAITip('rain', currentUsage.rain, 1000)}</div>
         </div>
 
-        {/* 碳排量指標卡 (環境貢獻總結) */}
-        <div className="glass-panel metric-card" style={{ 
-          borderColor: isCarbonExceeded ? 'var(--color-error)' : 'var(--panel-border)',
-          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.8))',
+        {/* 碳排量指標卡 (環境貢獻總結) - 桌機版全寬優化 */}
+        <div className="glass-panel metric-card carbon-card-full" style={{ 
+          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(30, 41, 59, 0.7) 100%)',
+          borderColor: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)',
           position: 'relative',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          display: 'flex',
+          boxShadow: `0 0 20px ${isCarbonExceeded ? 'rgba(239, 68, 68, 0.1)' : 'rgba(139, 92, 246, 0.1)'}`
         }}>
           <div style={{
             position: 'absolute',
             bottom: '-20px',
-            right: '-20px',
-            width: '100px',
-            height: '100px',
-            background: getStatusBg(),
+            right: '-10px',
+            width: '120px',
+            height: '120px',
+            background: `radial-gradient(circle, ${isCarbonExceeded ? 'rgba(239, 68, 68, 0.2)' : 'rgba(139, 92, 246, 0.2)'} 0%, transparent 70%)`,
             zIndex: 0,
-            opacity: 0.5
+            opacity: 0.6
           }} />
-          <div className="metric-header" style={{ position: 'relative', zIndex: 1 }}>
-            <h3 className="metric-title" style={{ margin: 0, color: getStatusColor() }}>
-              <Sparkles size={18} /> {currentMonthStr.replace('-', '/')} 碳排量餘額
-            </h3>
-          </div>
-          <div className="metric-value" style={{ color: getStatusColor(), position: 'relative', zIndex: 1 }}>
-            <span style={{ fontSize: '3rem' }}>
-              {isCarbonExceeded ? (Math.abs(carbonBudget - carbonProjected).toLocaleString()) : (carbonBudget - carbonProjected).toLocaleString()}
-            </span>
-            <span className="metric-unit">kg</span>
+          
+          <div className="carbon-main-info" style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div className="metric-header" style={{ marginBottom: '0.8rem' }}>
+              <h3 className="metric-title" style={{ margin: 0, color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)', fontWeight: 700 }}>
+                <Sparkles size={18} /> {currentMonthStr.replace('-', '/')} 碳排量餘額
+              </h3>
+            </div>
+            <div className="metric-value" style={{ color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)', margin: 0 }}>
+              <span style={{ fontSize: '3.5rem', fontWeight: 800 }}>
+                {isCarbonExceeded ? (Math.abs(carbonBudget - carbonProjected).toLocaleString()) : (carbonBudget - carbonProjected).toLocaleString()}
+              </span>
+              <span className="metric-unit" style={{ color: 'var(--text-muted)', marginLeft: '8px' }}>kg CO2e</span>
+            </div>
           </div>
           
-          <div style={{ marginTop: 'auto', position: 'relative', zIndex: 1 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
-              <span>月預計: {carbonProjected.toLocaleString()} kg</span>
-              <span>目標: {carbonBudget.toLocaleString()} kg</span>
+          <div className="progress-section" style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 500 }}>
+              <div style={{ display: 'flex', gap: '1.5rem' }}>
+                <span>月預計: <b style={{ color: 'var(--text-main)' }}>{carbonProjected.toLocaleString()}</b> kg</span>
+                <span>減量目標: <b style={{ color: 'var(--text-main)' }}>{carbonBudget.toLocaleString()}</b> kg</span>
+              </div>
+              <span style={{ color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)' }}>
+                目標達成率: {Math.round((carbonProjected / (carbonBudget || 1)) * 100)}%
+              </span>
             </div>
-            <div className="progress-container" style={{ height: '6px' }}>
+            
+            <div className="progress-container" style={{ height: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px' }}>
               <div className="progress-bar" style={{ 
                 width: `${Math.min(100, (carbonProjected / (carbonBudget || 1)) * 100)}%`, 
-                backgroundColor: getStatusColor() 
+                backgroundColor: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)',
+                boxShadow: `0 0 15px ${isCarbonExceeded ? 'rgba(239, 68, 68, 0.3)' : 'rgba(139, 92, 246, 0.3)'}`
               }} />
             </div>
-            <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, color: getStatusColor() }}>
-              {isCarbonExceeded ? (
-                <><CloudOff size={14} /> 減量目標未達成</>
-              ) : (
-                <><TrendingDown size={14} /> 救了 {Math.max(0, Math.round((carbonBudget - carbonProjected) / 1.0))} 棵大樹</>
-              )}
+            
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '16px' }}>
+              <div style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)' }}>
+                {isCarbonExceeded ? (
+                  <><CloudOff size={16} /> 狀態：碳預算超額，請優化空調設施</>
+                ) : (
+                  <><TrendingDown size={16} /> 狀態：減碳表現優異 (相比基準年)</>
+                )}
+              </div>
+              <div style={{ 
+                padding: '6px 14px', 
+                background: isCarbonExceeded ? 'rgba(239, 68, 68, 0.1)' : 'rgba(139, 92, 246, 0.1)',
+                borderRadius: '20px',
+                fontSize: '0.8rem',
+                color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-carbon)',
+                border: `1px solid ${isCarbonExceeded ? 'rgba(239, 68, 68, 0.2)' : 'rgba(139, 92, 246, 0.2)'}`,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                <Sparkles size={14} /> 
+                {isCarbonExceeded ? `需額外抵銷 ${Math.abs(carbonBudget - carbonProjected).toLocaleString()} kg` : `相當於救了 ${Math.max(0, Math.round((carbonBudget - carbonProjected) / 1.0))} 棵大樹`}
+              </div>
             </div>
           </div>
         </div>
