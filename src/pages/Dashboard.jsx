@@ -322,13 +322,29 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="capsule-nav">
-            <button className="nav-btn" onClick={() => handleMonthChange(-1)}><ChevronLeft size={16} /></button>
-            <div className="nav-current">
-              <Calendar size={16} />
-              <span>{format(currentMonthDate, 'yyyy年MM月')}</span>
+          <div className="capsule-nav" style={{ gap: '6px' }}>
+            <button className="nav-btn" onClick={() => handleMonthChange(-1)} title="前一個月"><ChevronLeft size={16} /></button>
+            <div 
+              className="nav-current" 
+              style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', position: 'relative' }}
+              onClick={() => document.getElementById('month-picker').showPicker()}
+            >
+              <Calendar size={18} className="text-main" style={{ minWidth: '18px' }} />
+              <span style={{ whiteSpace: 'nowrap' }}>{format(currentMonthDate, 'yyyy年MM月')}</span>
+              <input 
+                id="month-picker"
+                type="month" 
+                style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+                value={format(currentMonthDate, 'yyyy-MM')}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    const [y, m] = e.target.value.split('-');
+                    setCurrentMonthDate(new Date(parseInt(y), parseInt(m) - 1, 1));
+                  }
+                }}
+              />
             </div>
-            <button className="nav-btn" onClick={() => handleMonthChange(1)}><ChevronRight size={16} /></button>
+            <button className="nav-btn" onClick={() => handleMonthChange(1)} title="後一個月"><ChevronRight size={16} /></button>
             <button className="nav-btn-today" onClick={() => setCurrentMonthDate(startOfMonth(new Date()))}>本月</button>
           </div>
         </div>

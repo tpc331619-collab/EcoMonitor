@@ -573,8 +573,13 @@ p {
   }
 
   /* 縮小手機版數字大小以壓縮空間 */
-  .carbon-main-info .metric-value span {
+  .carbon-main-info .metric-value > span:first-child {
     font-size: 2.8rem !important;
+  }
+
+  .carbon-main-info .metric-unit {
+    font-size: 1rem !important;
+    margin-left: 6px !important;
   }
 
   .carbon-detail-info {
