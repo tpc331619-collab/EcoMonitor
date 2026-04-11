@@ -15,7 +15,7 @@ const Sidebar = () => {
           <Sparkles className="logo-ai-glow" size={10} />
         </div>
         <div className="logo-text">
-          <span className="brand-primary">Eco</span>
+          <span className="brand-primary">ESG</span>
           <span className="brand-secondary">Pulse</span>
         </div>
       </div>

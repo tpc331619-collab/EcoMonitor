@@ -209,13 +209,13 @@ const LimitSettingModal = ({ isOpen, onClose, year, type, fetchDashboardData }) 
           <div className="modal-header-btns" style={{ display: 'flex', gap: '0.8rem' }}>
             <button
               type="button" onClick={handleCopyLastYearLimits} disabled={loading} className="btn btn-secondary"
-              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', fontSize: '0.85rem', flex: 1, justifyContent: 'center' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', fontSize: '0.85rem', flex: 1, justifyContent: 'center', whiteSpace: 'nowrap' }}
             >
               <RefreshCw size={14} /> 複製去年設定
             </button>
             <button
               type="button" onClick={handleImportPreviousYear} disabled={loading} className="btn btn-secondary"
-              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', fontSize: '0.85rem', backgroundImage: 'linear-gradient(135deg, #6366f1, #a855f7)', border: 'none', color: 'white', flex: 1, justifyContent: 'center' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', fontSize: '0.85rem', backgroundImage: 'linear-gradient(135deg, #6366f1, #a855f7)', border: 'none', color: 'white', flex: 1, justifyContent: 'center', whiteSpace: 'nowrap' }}
             >
               <Sparkles size={14} /> 帶入去年實際值
             </button>
