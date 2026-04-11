@@ -561,6 +561,23 @@ p {
     font-size: 0.8rem !important;
     min-width: 35px !important;
   }
+
+  /* Modal Title & Buttons Fix */
+  .modal-header-responsive {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding-right: 0 !important;
+    gap: 0.75rem !important;
+  }
+  
+  .modal-header-btns {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+
+  .history-title-mobile {
+    font-size: 1rem !important;
+  }
 }
 
 /* Branding & Logo */

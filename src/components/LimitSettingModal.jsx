@@ -200,22 +200,22 @@ const LimitSettingModal = ({ isOpen, onClose, year, type, fetchDashboardData }) 
           <X size={24} />
         </button>
         
-        <div style={{ 
+        <div className="modal-header-responsive" style={{ 
           display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
           marginBottom: '1.7rem', flexWrap: 'wrap', gap: '1rem', 
           paddingRight: '80px' // 強力保證不遮擋
         }}>
           <h2 style={{ margin: 0, fontSize: '1.5rem' }}>設定 {year} 年度 {titleStr}</h2>
-          <div style={{ display: 'flex', gap: '0.8rem' }}>
+          <div className="modal-header-btns" style={{ display: 'flex', gap: '0.8rem' }}>
             <button
               type="button" onClick={handleCopyLastYearLimits} disabled={loading} className="btn btn-secondary"
-              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', fontSize: '0.85rem', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--panel-border)', color: 'var(--text-main)' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', fontSize: '0.85rem', flex: 1, justifyContent: 'center' }}
             >
               <RefreshCw size={14} /> 複製去年設定
             </button>
             <button
               type="button" onClick={handleImportPreviousYear} disabled={loading} className="btn btn-secondary"
-              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', fontSize: '0.85rem', backgroundImage: 'linear-gradient(135deg, #6366f1, #a855f7)', border: 'none', color: 'white' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', fontSize: '0.85rem', backgroundImage: 'linear-gradient(135deg, #6366f1, #a855f7)', border: 'none', color: 'white', flex: 1, justifyContent: 'center' }}
             >
               <Sparkles size={14} /> 帶入去年實際值
             </button>

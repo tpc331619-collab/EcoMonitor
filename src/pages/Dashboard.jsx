@@ -403,7 +403,7 @@ const Dashboard = () => {
             <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto' }}>本日降雨機率適中，系統持續回收。</div>
           </div>
 
-          <div className="glass-panel metric-card carbon-card-full" style={{ background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(26, 28, 35, 0.85) 100%)', borderColor: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', display: 'flex', boxShadow: `0 0 20px ${isCarbonExceeded ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.05)'}`, padding: '2rem' }}>
+          <div className="glass-panel metric-card carbon-card-full" style={{ background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(26, 28, 35, 0.85) 100%)', borderColor: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', display: 'flex', boxShadow: `0 0 20px ${isCarbonExceeded ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.05)'}` }}>
             <div className="carbon-main-info" style={{ flex: '0 0 300px' }}>
               <h3 style={{ margin: 0, color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '10px' }}><Globe size={20} /> 碳排量餘額</h3>
               <div className="metric-value" style={{ color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', margin: '1rem 0' }}>
@@ -411,7 +411,7 @@ const Dashboard = () => {
                 <span className="metric-unit" style={{ marginLeft: '10px' }}>kg CO2e</span>
               </div>
             </div>
-            <div style={{ flex: '1', paddingLeft: '2rem', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="carbon-detail-info" style={{ flex: '1', paddingLeft: '2rem', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.9rem' }}>
                 <span>目標: {carbonBudget.toLocaleString()} kg</span>
                 <span style={{ color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)' }}>預計達成: {Math.round((carbonProjected/carbonBudget)*100)}%</span>
@@ -431,9 +431,9 @@ const Dashboard = () => {
 
         {role !== 'guest' && (
           <div className="glass-panel" style={{ marginTop: '2rem', padding: 0 }}>
-            <div onClick={() => setIsHistoryExpanded(!isHistoryExpanded)} style={{ padding: '1.5rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: isHistoryExpanded ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
-              <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.8rem' }}>{isHistoryExpanded ? <ChevronUp size={24} /> : <ChevronDown size={24} />} {currentMonthStr} 歷史紀錄</h2>
-              <button onClick={(e) => { e.stopPropagation(); handleExportExcel(); }} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}><Download size={16} /> 導出 Excel</button>
+            <div onClick={() => setIsHistoryExpanded(!isHistoryExpanded)} style={{ padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: isHistoryExpanded ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
+              <h2 className="history-title-mobile" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.8rem', fontSize: '1.25rem' }}>{isHistoryExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />} {currentMonthStr} 歷史紀錄</h2>
+              <button onClick={(e) => { e.stopPropagation(); handleExportExcel(); }} className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}><Download size={14} /> 導出 Excel</button>
             </div>
             {isHistoryExpanded && (
               <div style={{ padding: '0 2rem 2rem' }} className="fade-in">
