@@ -253,6 +253,12 @@ p {
   color: var(--text-main);
 }
 
+/* 轉場優化 */
+.hover-bright:active {
+  transform: scale(0.95);
+  opacity: 0.8;
+}
+
 .nav-item.active {
   background: rgba(56, 189, 248, 0.08);
   color: var(--color-water);
@@ -530,6 +536,30 @@ p {
   
   .carbon-main-info {
     flex: 0 0 350px;
+  }
+}
+
+/* Mobile Carbon Card Fix */
+@media (max-width: 768px) {
+  .carbon-card-full {
+    min-height: 120px !important;
+    padding: 1.25rem !important;
+    gap: 0.5rem !important;
+  }
+  
+  .carbon-main-info {
+    margin-bottom: 0.5rem;
+  }
+
+  .limit-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.8rem !important;
+  }
+
+  /* 縮小介面字體避免擠壓 */
+  .limit-grid label {
+    font-size: 0.8rem !important;
+    min-width: 35px !important;
   }
 }
 

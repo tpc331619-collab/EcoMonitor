@@ -229,10 +229,10 @@ const LimitSettingModal = ({ isOpen, onClose, year, type, fetchDashboardData }) 
           </div>
         ) : (
           <form onSubmit={handleSave}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.2rem', marginBottom: '2rem' }}>
+            <div className="limit-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.2rem', marginBottom: '2rem' }}>
               {limits.map((val, idx) => (
-                <div key={idx} className="form-group" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
-                  <label style={{ minWidth: '45px', marginBottom: 0, color: 'var(--text-muted)', fontWeight: 'bold' }}>{idx + 1}月</label>
+                <div key={idx} className="form-group" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                  <label style={{ minWidth: '40px', marginBottom: 0, color: 'var(--text-muted)', fontWeight: 'bold', fontSize: '0.85rem' }}>{idx + 1}月</label>
                   <div style={{ position: 'relative', flex: 1 }}>
                     <input
                       type="number" className="form-control" value={val}
@@ -241,8 +241,8 @@ const LimitSettingModal = ({ isOpen, onClose, year, type, fetchDashboardData }) 
                         newLimits[idx] = e.target.value;
                         setLimits(newLimits);
                       }}
-                      placeholder="未設定"
-                      style={{ borderLeft: `4px solid ${val ? colorVar : 'transparent'}`, height: '42px' }}
+                      placeholder="未設"
+                      style={{ borderLeft: `4px solid ${val ? colorVar : 'transparent'}`, height: '38px', padding: '0 8px', fontSize: '0.9rem' }}
                     />
                   </div>
                 </div>

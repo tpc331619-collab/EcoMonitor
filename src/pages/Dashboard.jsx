@@ -258,15 +258,19 @@ const Dashboard = () => {
   const handleCopyCardImage = async (ref, title) => {
     if (!ref.current) return;
     try {
-      const blob = await toBlob(ref.current, { backgroundColor: '#0f172a', style: { borderRadius: '12px' } });
-      
       if (navigator.clipboard && window.ClipboardItem) {
+        // Safari / iOS 支援以 Promise 方式寫入剪貼簿
+        const clipboardPromise = toBlob(ref.current, { 
+          backgroundColor: '#14161a', 
+          style: { borderRadius: '16px' } 
+        });
+
         await navigator.clipboard.write([
-          new ClipboardItem({ 'image/png': blob })
+          new ClipboardItem({ 'image/png': clipboardPromise })
         ]);
         alert(`${title} 圖片已複製到剪貼簿！`);
       } else {
-        const dataUrl = await toPng(ref.current, { backgroundColor: '#0f172a', style: { borderRadius: '12px' } });
+        const dataUrl = await toPng(ref.current, { backgroundColor: '#14161a', style: { borderRadius: '16px' } });
         const link = document.createElement('a');
         link.download = `${title}_${format(new Date(), 'MMdd')}.png`;
         link.href = dataUrl;
