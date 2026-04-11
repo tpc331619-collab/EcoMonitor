@@ -121,7 +121,7 @@ p {
 /* Sidebar styles */
 .sidebar {
   width: 100%;
-  height: 70px;
+  height: 60px;
   position: fixed;
   left: 0;
   top: 0;
@@ -133,8 +133,14 @@ p {
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: 0 2rem;
+  padding: 0 1.5rem;
   z-index: 100;
+}
+
+.main-content {
+  margin-top: 60px;
+  padding: 1.5rem 2rem;
+  min-height: calc(100vh - 60px);
 }
 
 /* Capsule Navigation Refining */
@@ -217,16 +223,79 @@ p {
   transform: translateY(-2px);
 }
 
-.sidebar .logo {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--text-main);
-  background: -webkit-linear-gradient(45deg, var(--color-water), var(--color-electric));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 0;
-  flex-shrink: 0;
+.logo-featured {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.logo-featured:hover {
+  transform: scale(1.05) rotate(5deg);
+  border-color: var(--color-water);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+}
+
+.logo-base {
+  color: #22c55e;
+  filter: drop-shadow(0 0 5px rgba(34, 197, 94, 0.3));
+}
+
+.logo-pulse-overlay {
+  position: absolute;
+  color: var(--color-water);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.8;
+  animation: logo-pulse-line 2s ease-in-out infinite;
+}
+
+.logo-ai-glow {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  color: #fbbf24;
+  animation: logo-float 2.5s ease-in-out infinite;
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.brand-primary {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.brand-secondary {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-water);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-top: 2px;
+}
+
+@keyframes logo-pulse-line {
+  0%, 100% { opacity: 0.4; transform: translate(-50%, -50%) scale(0.9); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); filter: drop-shadow(0 0 8px var(--color-water)); }
+}
+
+@keyframes logo-float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-3px) scale(1.2); filter: brightness(1.2); }
 }
 
 .sidebar-nav {

@@ -19,7 +19,7 @@ const Dashboard = () => {
   const currentMonthStr = format(currentMonthDate, 'yyyy-MM');
 
   const [limits, setLimits] = useState({ electric: 1000, water: 500 });
-  const [currentUsage, setCurrentUsage] = useState({ electric: 0, water: 0, rain: 0 });
+  const [currentUsage, setCurrentUsage] = useState({ electric: 0, water: 0, rain: 0, rainYearly: 0 });
   const [carbonGoals, setCarbonGoals] = useState({ reductionTarget: 5, baseYearAvg: 1000 });
   const [records, setRecords] = useState([]);
   const [electricFactor, setElectricFactor] = useState(4.233);
@@ -142,6 +142,11 @@ const Dashboard = () => {
       const q = query(collection(db, `usage_records_${currentYear}`), where('month', '==', currentMonthStr));
       const querySnapshot = await getDocs(q);
 
+      // Yearly Rain Query
+      const qRainYear = query(collection(db, `usage_records_${currentYear}`), where('type', '==', 'rain'));
+      const rainYearSnap = await getDocs(qRainYear);
+      const allRainYearRecords = rainYearSnap.docs.map(doc => doc.data());
+
       let recs = [];
       let electricRecords = [];
       let waterRecords = [];
@@ -181,11 +186,22 @@ const Dashboard = () => {
       }
 
       let rUsage = 0;
-      const rain01 = rainRecords.find(r => format(new Date(r.date), 'dd') === '01');
-      const latestRain = rainRecords[rainRecords.length - 1];
-      if (latestRain && rain01) rUsage = (latestRain.readings?.rain || 0) - (rain01.readings?.rain || 0);
+      if (rainRecords.length > 0) {
+        const firstRain = rainRecords[0];
+        const lastRain = rainRecords[rainRecords.length - 1];
+        rUsage = (lastRain.readings?.rain || 0) - (firstRain.readings?.rain || 0);
+      }
 
-      setCurrentUsage({ electric: e, water: w, rain: rUsage });
+      // Calculate Yearly Rain Cumulative: (Latest reading of year - Earliest reading of year)
+      let rYearlyUsage = 0;
+      if (allRainYearRecords.length > 0) {
+        const sortedAll = [...allRainYearRecords].sort((a, b) => new Date(a.date) - new Date(b.date));
+        const yFirst = sortedAll[0];
+        const yLast = sortedAll[sortedAll.length - 1];
+        rYearlyUsage = (yLast.readings?.rain || 0) - (yFirst.readings?.rain || 0);
+      }
+
+      setCurrentUsage({ electric: e, water: w, rain: rUsage, rainYearly: rYearlyUsage });
       setRecords(recs);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -301,7 +317,7 @@ const Dashboard = () => {
   return (
     <>
       <div className="fade-in">
-        <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '1.5rem', flexWrap: 'wrap' }}>
             <h1 style={{ 
               margin: 0, 
@@ -429,7 +445,26 @@ const Dashboard = () => {
                 {role !== 'guest' && <button onClick={() => { setInputType('rain'); setInputModalOpen(true); }} className="card-action text-rain"><PenTool size={16} /></button>}
               </div>
             </div>
-            <div className="metric-value text-rain"><span>{Math.round(currentUsage.rain).toLocaleString()}</span><span className="metric-unit">度</span></div>
+            <div className="metric-value text-rain" style={{ display: 'flex', alignItems: 'baseline', gap: '15px', marginBottom: '1rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+                <span style={{ fontSize: '3rem', fontWeight: 800 }}>{Math.round(currentUsage.rain).toLocaleString()}</span>
+                <span className="metric-unit">度</span>
+              </div>
+              <span style={{ 
+                padding: '4px 8px', 
+                background: 'rgba(34, 197, 94, 0.1)', 
+                borderRadius: '4px', 
+                color: '#22c55e', 
+                fontSize: '0.75rem',
+                fontWeight: 'bold',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                marginBottom: '4px'
+              }}>
+                <Target size={12} /> 年度累積: {Math.round(currentUsage.rainYearly).toLocaleString()} 度
+              </span>
+            </div>
             <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto' }}>本日降雨機率適中，系統持續回收。</div>
           </div>
 
@@ -468,23 +503,130 @@ const Dashboard = () => {
             {isHistoryExpanded && (
               <div style={{ padding: '0 2rem 2rem' }} className="fade-in">
                 {records.length === 0 ? <p className="text-muted">本月尚無紀錄。</p> : (
-                  <div style={{ marginTop: '1rem' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                      <thead><tr style={{ borderBottom: '1px solid var(--panel-border)', color: 'var(--text-muted)' }}><th style={{ padding: '0.8rem', textAlign: 'left' }}>日期</th><th style={{ padding: '0.8rem' }}>類型</th><th style={{ padding: '0.8rem', textAlign: 'right' }}>操作</th></tr></thead>
-                      <tbody>
-                        {getDisplayList(records).map(r => (
-                          <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <td style={{ padding: '0.8rem' }}>{format(new Date(r.date), 'MM/dd')}</td>
-                            <td style={{ padding: '0.8rem', textAlign: 'center' }}><span className={`badge badge-${r.type}`}>{r.type === 'electric' ? '用電' : r.type === 'water' ? '用水' : '雨水'}</span></td>
-                            <td style={{ padding: '0.8rem', textAlign: 'right' }}>
-                              <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', marginRight: '10px' }}><Edit2 size={14} /></button>
-                              <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                    <div style={{ marginTop: '1rem' }} className="history-accordion-content">
+                      {/* 分組數據 */}
+                      {(() => {
+                        const electrics = records.filter(r => r.type === 'electric');
+                        const waters = records.filter(r => r.type === 'water');
+                        const rains = records.filter(r => r.type === 'rain');
+
+                        return (
+                          <>
+                            {/* 用電表格 */}
+                            {electrics.length > 0 && (
+                              <div style={{ marginTop: '1rem' }}>
+                                <h3 style={{ color: 'var(--color-electric)', marginBottom: '0.8rem', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  <Zap size={16} /> 用電紀錄
+                                </h3>
+                                <div style={{ overflowX: 'auto', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+                                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', minWidth: '800px' }}>
+                                    <thead>
+                                      <tr style={{ borderBottom: '1px solid var(--panel-border)', color: 'var(--text-muted)' }}>
+                                        <th style={{ padding: '0.8rem' }}>日期</th>
+                                        <th style={{ padding: '0.8rem' }}>辦公大樓</th>
+                                        <th style={{ padding: '0.8rem' }}>倉儲大樓</th>
+                                        <th style={{ padding: '0.8rem' }}>低壓用電</th>
+                                        <th style={{ padding: '0.8rem' }}>1-1</th>
+                                        <th style={{ padding: '0.8rem' }}>1-2</th>
+                                        <th style={{ padding: '0.8rem' }}>1-3</th>
+                                        <th style={{ padding: '0.8rem' }}>2-1</th>
+                                        <th style={{ padding: '0.8rem' }}>AGV</th>
+                                        <th style={{ padding: '0.8rem', textAlign: 'right' }}>操作</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {electrics.map(r => (
+                                        <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                          <td style={{ padding: '0.8rem' }}>{format(new Date(r.date), 'MM/dd')}</td>
+                                          <td style={{ padding: '0.8rem' }}>{r.readings?.ml?.toLocaleString()}</td>
+                                          <td style={{ padding: '0.8rem' }}>{r.readings?.mp1?.toLocaleString()}</td>
+                                          <td style={{ padding: '0.8rem' }}>{r.readings?.mp?.toLocaleString()}</td>
+                                          <td style={{ padding: '0.8rem' }}>{r.readings?.kwh11?.toLocaleString()}</td>
+                                          <td style={{ padding: '0.8rem' }}>{r.readings?.kwh12?.toLocaleString()}</td>
+                                          <td style={{ padding: '0.8rem' }}>{r.readings?.kwh13?.toLocaleString()}</td>
+                                          <td style={{ padding: '0.8rem' }}>{r.readings?.kwh21?.toLocaleString()}</td>
+                                          <td style={{ padding: '0.8rem' }}>{r.readings?.agv?.toLocaleString()}</td>
+                                          <td style={{ padding: '0.8rem', textAlign: 'right' }}>
+                                            <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', marginRight: '10px' }}><Edit2 size={14} /></button>
+                                            <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* 自來水表格 */}
+                            {waters.length > 0 && (
+                              <div style={{ marginTop: '1.5rem' }}>
+                                <h3 style={{ color: 'var(--color-water)', marginBottom: '0.8rem', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  <Droplet size={16} /> 自來水紀錄
+                                </h3>
+                                <div style={{ overflowX: 'auto', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+                                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', minWidth: '400px' }}>
+                                    <thead>
+                                      <tr style={{ borderBottom: '1px solid var(--panel-border)', color: 'var(--text-muted)' }}>
+                                        <th style={{ padding: '0.8rem' }}>日期</th>
+                                        <th style={{ padding: '0.8rem' }}>總水表(早)</th>
+                                        <th style={{ padding: '0.8rem' }}>總水表(夜)</th>
+                                        <th style={{ padding: '0.8rem', textAlign: 'right' }}>操作</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {waters.map(r => (
+                                        <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                          <td style={{ padding: '0.8rem' }}>{format(new Date(r.date), 'MM/dd')}</td>
+                                          <td style={{ padding: '0.8rem' }}>{r.readings?.total?.toLocaleString()}</td>
+                                          <td style={{ padding: '0.8rem' }}>{r.readings?.drink?.toLocaleString()}</td>
+                                          <td style={{ padding: '0.8rem', textAlign: 'right' }}>
+                                            <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', marginRight: '10px' }}><Edit2 size={14} /></button>
+                                            <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* 雨水回收表格 */}
+                            {rains.length > 0 && (
+                              <div style={{ marginTop: '1.5rem' }}>
+                                <h3 style={{ color: '#22c55e', marginBottom: '0.8rem', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  <CloudRain size={16} /> 雨水回收紀錄
+                                </h3>
+                                <div style={{ overflowX: 'auto', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+                                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', minWidth: '300px' }}>
+                                    <thead>
+                                      <tr style={{ borderBottom: '1px solid var(--panel-border)', color: 'var(--text-muted)' }}>
+                                        <th style={{ padding: '0.8rem' }}>日期</th>
+                                        <th style={{ padding: '0.8rem' }}>雨水回收(自設水表)</th>
+                                        <th style={{ padding: '0.8rem', textAlign: 'right' }}>操作</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {rains.map(r => (
+                                        <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                          <td style={{ padding: '0.8rem' }}>{format(new Date(r.date), 'MM/dd')}</td>
+                                          <td style={{ padding: '0.8rem' }}>{r.readings?.rain?.toLocaleString()}</td>
+                                          <td style={{ padding: '0.8rem', textAlign: 'right' }}>
+                                            <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', marginRight: '10px' }}><Edit2 size={14} /></button>
+                                            <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
                 )}
               </div>
             )}

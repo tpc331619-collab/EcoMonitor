@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, History, Settings, LogOut, Droplet, Zap, CloudRain } from 'lucide-react';
+import { LayoutDashboard, History, Settings, LogOut, Droplet, Zap, CloudRain, Activity, Leaf, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Sidebar = () => {
@@ -8,9 +8,16 @@ const Sidebar = () => {
   
   return (
     <aside className="sidebar shadow-lg">
-      <div className="logo" style={{ cursor: 'pointer' }}>
-        <Zap className="logo-icon" size={28} />
-        <span>EMS</span>
+      <div className="logo-container" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div className="logo-featured">
+          <Leaf className="logo-base" size={24} />
+          <Activity className="logo-pulse-overlay" size={14} />
+          <Sparkles className="logo-ai-glow" size={10} />
+        </div>
+        <div className="logo-text">
+          <span className="brand-primary">Eco</span>
+          <span className="brand-secondary">Pulse</span>
+        </div>
       </div>
       
       <nav className="sidebar-nav">
