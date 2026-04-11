@@ -145,8 +145,10 @@ const LimitSettingModal = ({ isOpen, onClose, year, type, fetchDashboardData }) 
             const G = (currentLast.kwh21 || 0) - (first.kwh21 || 0);
             const H = (currentLast.agv || 0) - (first.agv || 0);
             diffValue = (A + B + C + D + E + F + G + H) * ctFactor;
-          } else {
+          } else if (type === 'water') {
             diffValue = (currentLast.drink || 0) - (first.total || 0);
+          } else if (type === 'rain') {
+            diffValue = (currentLast.rain || 0) - (first.rain || 0);
           }
         } else {
           const currentIndex = sorted.indexOf(monthRecords[0]);
@@ -162,8 +164,10 @@ const LimitSettingModal = ({ isOpen, onClose, year, type, fetchDashboardData }) 
               const G = (currentLast.kwh21 || 0) - (prevLast.kwh21 || 0);
               const H = (currentLast.agv || 0) - (prevLast.agv || 0);
               diffValue = (A + B + C + D + E + F + G + H) * ctFactor;
-            } else {
+            } else if (type === 'water') {
               diffValue = (currentLast.drink || 0) - (prevLast.total || 0);
+            } else if (type === 'rain') {
+              diffValue = (currentLast.rain || 0) - (prevLast.rain || 0);
             }
           }
         }
@@ -178,8 +182,8 @@ const LimitSettingModal = ({ isOpen, onClose, year, type, fetchDashboardData }) 
     }
   };
 
-  const titleStr = type === 'electric' ? '用電上限' : '用水上限';
-  const colorVar = type === 'electric' ? 'var(--color-electric)' : 'var(--color-water)';
+  const titleStr = type === 'electric' ? '用電上限' : type === 'water' ? '用水上限' : '雨水回收目標';
+  const colorVar = type === 'electric' ? 'var(--color-electric)' : type === 'water' ? 'var(--color-water)' : 'var(--color-rain)';
 
   return (
     <div style={{

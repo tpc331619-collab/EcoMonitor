@@ -475,7 +475,12 @@ const Dashboard = () => {
               </h3>
               <div className="card-actions" style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => handleCopyCardImage(rainCardRef, '雨水')} className="card-action"><Camera size={16} /></button>
-                {role !== 'guest' && <button onClick={() => { setInputType('rain'); setInputModalOpen(true); }} className="card-action text-rain"><PenTool size={16} /></button>}
+                {role !== 'guest' && (
+                  <>
+                    <button onClick={() => { setInputType('rain'); setInputModalOpen(true); }} className="card-action text-rain"><PenTool size={16} /></button>
+                    <button onClick={() => { setInputType('rain'); setLimitModalOpen(true); }} className="card-action"><Target size={16} /></button>
+                  </>
+                )}
               </div>
             </div>
             <div className="metric-value text-rain" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
