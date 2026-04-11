@@ -297,19 +297,27 @@ const Dashboard = () => {
   const handleCopyCardImage = async (ref, title) => {
     if (!ref.current) return;
     try {
+      const exportOptions = {
+        backgroundColor: '#14161a',
+        pixelRatio: Math.max(window.devicePixelRatio || 1, 2),
+        style: { 
+          borderRadius: '16px',
+          margin: '0',
+          transform: 'scale(0.96)',
+          transformOrigin: 'center center'
+        }
+      };
+
       if (navigator.clipboard && window.ClipboardItem) {
         // Safari / iOS 支援以 Promise 方式寫入剪貼簿
-        const clipboardPromise = toBlob(ref.current, { 
-          backgroundColor: '#14161a', 
-          style: { borderRadius: '16px' } 
-        });
+        const clipboardPromise = toBlob(ref.current, exportOptions);
 
         await navigator.clipboard.write([
           new ClipboardItem({ 'image/png': clipboardPromise })
         ]);
         alert(`${title} 圖片已複製到剪貼簿！`);
       } else {
-        const dataUrl = await toPng(ref.current, { backgroundColor: '#14161a', style: { borderRadius: '16px' } });
+        const dataUrl = await toPng(ref.current, exportOptions);
         const link = document.createElement('a');
         link.download = `${title}_${format(new Date(), 'MMdd')}.png`;
         link.href = dataUrl;
@@ -389,7 +397,7 @@ const Dashboard = () => {
         </div>
 
         <div className="metric-grid">
-          <div className="glass-panel metric-card" ref={electricCardRef}>
+          <div className="glass-panel metric-card" ref={electricCardRef} style={{ borderColor: electricPct >= 90 ? 'var(--color-error)' : 'var(--color-electric)', boxShadow: `0 0 15px ${electricPct >= 90 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(251, 191, 36, 0.05)'}` }}>
             <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 className="text-electric" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px', fontSize: 'clamp(0.9rem, 4vw, 1.1rem)' }}>
                 <Zap size={18} /> {currentMonthStr.replace('-', '/')} 累積用電量
@@ -429,7 +437,7 @@ const Dashboard = () => {
             <div className="progress-container"><div className="progress-bar" style={{ width: `${electricPct}%`, backgroundColor: electricPct >= 90 ? 'var(--color-error)' : 'var(--color-electric)' }} /></div>
           </div>
 
-          <div className="glass-panel metric-card" ref={waterCardRef}>
+          <div className="glass-panel metric-card" ref={waterCardRef} style={{ borderColor: waterPct >= 90 ? 'var(--color-error)' : 'var(--color-water)', boxShadow: `0 0 15px ${waterPct >= 90 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(56, 189, 248, 0.05)'}` }}>
             <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 className="text-water" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px', fontSize: 'clamp(0.9rem, 4vw, 1.1rem)' }}>
                 <Droplet size={18} /> {currentMonthStr.replace('-', '/')} 累積用水量
@@ -468,7 +476,7 @@ const Dashboard = () => {
             <div className="progress-container"><div className="progress-bar" style={{ width: `${waterPct}%`, backgroundColor: waterPct >= 90 ? 'var(--color-error)' : 'var(--color-water)' }} /></div>
           </div>
 
-          <div className="glass-panel metric-card" ref={rainCardRef}>
+          <div className="glass-panel metric-card" ref={rainCardRef} style={{ borderColor: 'var(--color-rain)', boxShadow: '0 0 15px rgba(249, 115, 22, 0.05)' }}>
             <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 className="text-rain" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px', fontSize: 'clamp(0.9rem, 4vw, 1.1rem)' }}>
                 <CloudRain size={18} /> {currentMonthStr.replace('-', '/')} 累積雨水回收量
