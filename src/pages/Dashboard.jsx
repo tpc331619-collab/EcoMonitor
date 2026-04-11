@@ -166,9 +166,15 @@ const Dashboard = () => {
       });
 
       recs.sort((a, b) => new Date(b.date) - new Date(a.date));
-      electricRecords.sort((a, b) => new Date(a.date) - new Date(b.date));
-      waterRecords.sort((a, b) => new Date(a.date) - new Date(b.date));
-      rainRecords.sort((a, b) => new Date(a.date) - new Date(b.date));
+      const sortByDateAndCreation = (a, b) => {
+        const dateDiff = new Date(a.date) - new Date(b.date);
+        if (dateDiff !== 0) return dateDiff;
+        return (a.createdAt || '').localeCompare(b.createdAt || '');
+      };
+
+      electricRecords.sort(sortByDateAndCreation);
+      waterRecords.sort(sortByDateAndCreation);
+      rainRecords.sort(sortByDateAndCreation);
 
       let e = 0;
       const electricBaseRecord = electricRecords.find(r => format(new Date(r.date), 'dd') === '01');
@@ -186,15 +192,20 @@ const Dashboard = () => {
       if (waterBaseRecord && waterRecords.length >= 1) {
         const base = waterBaseRecord.readings;
         const latest = waterRecords[waterRecords.length - 1].readings;
-        w = (latest.total || 0) - (base.total || 0);
-        if (waterRecords.length === 1) w = 0; // 同一天無累積
+        // 修正：取當日所有欄位中最大的讀數作為基準，避免漏算晚表
+        const maxLatest = Math.max(...Object.values(latest).map(v => Number(v) || 0));
+        const minBase = Math.min(...Object.values(base).filter(v => (Number(v) || 0) > 0).map(v => Number(v) || 0));
+        w = maxLatest - minBase;
+        if (waterRecords.length === 1) w = 0; 
       }
 
       let rUsage = 0;
       if (rainRecords.length > 0) {
         const firstRain = rainRecords[0];
         const lastRain = rainRecords[rainRecords.length - 1];
-        rUsage = (lastRain.readings?.rain || 0) - (firstRain.readings?.rain || 0);
+        const maxLastRain = Math.max(...Object.values(lastRain.readings || {}).map(v => Number(v) || 0));
+        const minFirstRain = Math.min(...Object.values(firstRain.readings || {}).filter(v => (Number(v) || 0) > 0).map(v => Number(v) || 0));
+        rUsage = maxLastRain - minFirstRain;
       }
 
       // Calculate Yearly Rain Cumulative: (Latest reading of year - Earliest reading of year)
@@ -483,29 +494,54 @@ const Dashboard = () => {
                 <Target size={12} /> 年度累積: {Math.round(currentUsage.rainYearly).toLocaleString()} 度
               </span>
             </div>
-            <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto' }}>本日降雨機率適中，系統持續回收。</div>
+            <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.8rem' }}>本日降雨機率適中，系統持續回收。</div>
           </div>
 
           <div className="glass-panel metric-card carbon-card-full" style={{ borderColor: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', boxShadow: `0 0 20px ${isCarbonExceeded ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.05)'}` }}>
             <div className="carbon-main-info">
-              <h3 style={{ margin: 0, color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '10px' }}><Globe size={20} /> {currentMonthStr.replace('-', '/')} 碳排量餘額</h3>
-              <div className="metric-value" style={{ color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', margin: '1rem 0' }}>
-                <span style={{ fontSize: '3.5rem', fontWeight: 800 }}>{Math.abs(carbonBudget - carbonProjected).toLocaleString()}</span>
-                <span className="metric-unit" style={{ marginLeft: '10px' }}>kg CO2e</span>
+              <h3 style={{ margin: 0, color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '10px' }}><Globe size={20} /> {currentMonthStr.replace('-', '/')} 碳排放量現況</h3>
+              <div className="metric-value" style={{ color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', marginTop: '1rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+                <span style={{ fontSize: '3.5rem', fontWeight: 800 }}>{Math.round(currentUsage.electric * emissionFactor).toLocaleString()}</span>
+                <span className="metric-unit">/ {carbonBudget.toLocaleString()} kg CO2e</span>
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1.2rem', paddingLeft: '4px' }}>
+                💡 計算方式：累積用電 {Math.round(currentUsage.electric).toLocaleString()} 度 × 係數 {emissionFactor}
               </div>
             </div>
-            <div className="carbon-detail-info">
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.9rem' }}>
-                <span>目標: {carbonBudget.toLocaleString()} kg</span>
-                <span style={{ color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)' }}>預計達成: {Math.round((carbonProjected/carbonBudget)*100)}%</span>
+            <div className="carbon-detail-info" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1.2rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem' }}>
+                <span className="text-muted" style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span>本月目標: {carbonBudget.toLocaleString()} kg</span>
+                  <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>基準 {Math.round(carbonGoals.baseYearAvg).toLocaleString()} × (1 - {carbonGoals.reductionTarget}%) × {emissionFactor}</span>
+                </span>
+                <span style={{ color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', fontWeight: 'bold', textAlign: 'right' }}>
+                  預計月底達成: {Math.round((carbonProjected/carbonBudget)*100)}%
+                </span>
               </div>
               <div className="progress-container" style={{ height: '12px' }}><div className="progress-bar" style={{ width: `${Math.min(100, (carbonProjected/carbonBudget)*100)}%`, backgroundColor: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)' }} /></div>
-              <div style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ padding: '6px 12px', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '20px', fontSize: '0.85rem', color: 'var(--color-success)', border: '1px solid rgba(34, 197, 94, 0.2)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Leaf size={14} /> 換算救了 {Math.max(0, Math.round((carbonBudget - carbonProjected) / 1.0))} 棵樹
+              <div style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ padding: '6px 12px', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '20px', fontSize: '0.85rem', color: 'var(--color-success)', border: '1px solid rgba(34, 197, 94, 0.2)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Leaf size={14} /> 換算救了 {Math.max(0, Math.round((carbonBudget - Math.round(currentUsage.electric * emissionFactor)) / 1.0))} 棵樹
+                  </div>
+                  <div style={{ 
+                    fontSize: '0.9rem', 
+                    color: (currentUsage.electric * emissionFactor) > carbonBudget ? 'var(--color-error)' : isCarbonExceeded ? 'var(--color-warning)' : 'var(--color-success)', 
+                    fontWeight: 'bold' 
+                  }}>
+                    {(currentUsage.electric * emissionFactor) > carbonBudget 
+                      ? '🚨 警報！碳預算已經用完了' 
+                      : isCarbonExceeded 
+                        ? '⚠️ 目前沒超標，但月底預計會多用喔！' 
+                        : '✅ 表現太棒了！月底預測有剩餘'
+                    }
+                  </div>
                 </div>
-                <div style={{ fontSize: '0.9rem', color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', fontWeight: 'bold' }}>
-                  {isCarbonExceeded ? '🚨 碳預算超額' : '✅ 減碳表現優異'}
+                <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>
+                  {isCarbonExceeded 
+                    ? `月底預估超額: ${Math.round(carbonProjected - carbonBudget).toLocaleString()} kg` 
+                    : `預計月底剩餘: ${Math.round(carbonBudget - carbonProjected).toLocaleString()} kg`
+                  }
                 </div>
               </div>
             </div>
