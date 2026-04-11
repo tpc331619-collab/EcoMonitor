@@ -35,7 +35,7 @@ const Dashboard = () => {
   const [editRecordData, setEditRecordData] = useState(null);
   const [expandedTables, setExpandedTables] = useState({ electric: false, water: false, rain: false });
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
-  const [weather, setWeather] = useState({ temp: '--', pop: '--', desc: '載入中...', icon: 'sun' });
+  const [weather, setWeather] = useState({ temp: '--', pop: '--', desc: '載入中...', icon: 'sun', location: '--' });
 
   const electricCardRef = useRef(null);
   const waterCardRef = useRef(null);
@@ -102,7 +102,7 @@ const Dashboard = () => {
           if (wx.includes('雨')) icon = 'rain';
           else if (wx.includes('陰') || wx.includes('多雲')) icon = 'cloud';
 
-          setWeather({ temp, pop, desc: wx, icon });
+          setWeather({ temp, pop, desc: wx, icon, location: location.LocationName || location.locationName || searchKey });
         } else {
           setWeather(prev => ({ ...prev, desc: '找不到該區資料' }));
         }
@@ -511,7 +511,7 @@ const Dashboard = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <WeatherIcon />
-                <span style={{ color: '#fbbf24', fontWeight: '600' }}>{weather.desc} {weather.temp}°C</span>
+                <span style={{ color: '#fbbf24', fontWeight: '600' }}>{weather.location} | {weather.desc} {weather.temp}°C</span>
               </div>
               <span style={{ opacity: 0.3 }}>|</span>
               <span>{format(new Date(), 'yyyy/MM/dd')}</span>
