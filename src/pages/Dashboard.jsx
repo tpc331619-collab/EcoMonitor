@@ -89,7 +89,6 @@ const Dashboard = () => {
           });
 
           const wxValueObj = wxElem?.Time?.[0]?.ElementValue?.[0] || wxElem?.time?.[0]?.elementValue?.[0];
-          const popValueObj = popElem?.Time?.[0]?.ElementValue?.[0] || popElem?.time?.[0]?.elementValue?.[0];
           const tValueObj = tElem?.Time?.[0]?.ElementValue?.[0] || tElem?.time?.[0]?.elementValue?.[0];
 
           const wx = wxValueObj?.Weather || wxValueObj?.value || wxValueObj?.Value || '未知';
@@ -291,9 +290,6 @@ const Dashboard = () => {
     return <Sun className="text-warning" size={18} />;
   };
 
-  const electricList = records.filter(r => r.type === 'electric');
-  const waterList = records.filter(r => r.type === 'water');
-  const rainList = records.filter(r => r.type === 'rain');
   const getDisplayList = (list) => isHistoryExpanded ? list : list.slice(0, 2);
 
   if (loading) return <div className="loader-container"><div className="spinner"></div></div>;
