@@ -91,8 +91,12 @@ p {
 @media (max-width: 768px) {
   .main-content {
     margin-top: 60px;
-    padding: 1rem;
+    padding: 1rem 0.5rem; /* Reduced horizontal padding for wider cards */
     padding-bottom: 90px;
+  }
+
+  .glass-panel {
+    padding: 1rem; /* Reduce card inner padding on mobile */
   }
 
   .sidebar {
