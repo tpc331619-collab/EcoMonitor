@@ -2,10 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
 import { doc, getDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
-import { Zap, Droplet, CloudRain, Edit2, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, PenTool, Settings, Calculator, Download, Sparkles, Camera, Cloud, CloudDrizzle, Sun, CloudRain as RainIcon, WifiOff, CloudOff, TrendingDown, Calendar, Globe, Leaf, Target, RefreshCw } from 'lucide-react';
+import { Zap, Droplet, CloudRain, Edit2, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, PenTool, Settings, Calculator, Sparkles, Camera, Cloud, CloudDrizzle, Sun, CloudRain as RainIcon, WifiOff, CloudOff, TrendingDown, Calendar, Globe, Leaf, Target, RefreshCw } from 'lucide-react';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { format, addMonths, subMonths, startOfMonth } from 'date-fns';
-import * as XLSX from 'xlsx';
 import { toBlob, toPng } from 'html-to-image';
 import DataInputModal from '../components/DataInputModal';
 import EditRecordModal from '../components/EditRecordModal';
@@ -382,13 +381,6 @@ const Dashboard = () => {
     } catch (err) { console.error(err); }
   };
 
-  const handleExportExcel = () => {
-    const wb = XLSX.utils.book_new();
-    const exportData = records.map(r => ({ "日期": format(new Date(r.date), 'yyyy/MM/dd'), "類型": r.type, ...r.readings }));
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    XLSX.utils.book_append_sheet(wb, ws, "資源明細");
-    XLSX.writeFile(wb, `${currentMonthStr}_資源明細.xlsx`);
-  };
 
   const WeatherIcon = () => {
     if (weather.icon === 'rain') return <RainIcon className="text-water" size={18} />;
@@ -633,7 +625,6 @@ const Dashboard = () => {
           <div className="glass-panel" style={{ marginTop: '2rem', padding: 0 }}>
             <div onClick={() => setIsHistoryExpanded(!isHistoryExpanded)} style={{ padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: isHistoryExpanded ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
               <h2 className="history-title-mobile" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.8rem', fontSize: '1.25rem' }}>{isHistoryExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />} {currentMonthStr} 歷史紀錄</h2>
-              <button onClick={(e) => { e.stopPropagation(); handleExportExcel(); }} className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}><Download size={14} /> 導出 Excel</button>
             </div>
             {isHistoryExpanded && (
               <div style={{ padding: '0 2rem 2rem' }} className="fade-in">
