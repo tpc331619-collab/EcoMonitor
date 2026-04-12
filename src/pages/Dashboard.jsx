@@ -42,6 +42,7 @@ const Dashboard = () => {
   const electricCardRef = useRef(null);
   const waterCardRef = useRef(null);
   const rainCardRef = useRef(null);
+  const dataCache = useRef({});  // in-memory cache: { 'yyyy-MM': { limits, factor, ... } }
 
   useEffect(() => {
     fetchDashboardData();
@@ -108,51 +109,78 @@ const Dashboard = () => {
     }
   };
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (forceRefresh = false) => {
     setLoading(true);
     try {
       const currentYear = currentMonthStr.substring(0, 4);
       const currentMonthNum = currentMonthStr.substring(5, 7);
+      const cacheKey = currentMonthStr;
 
-      const limitsRef = doc(db, `settings_${currentYear}`, `limits_${currentMonthNum}`);
-      const factorSnap = await getDoc(doc(db, "settings", "electric_factor"));
-      
+      // 如果有快取且不是強制重整，直接用快取資料
+      if (!forceRefresh && dataCache.current[cacheKey]) {
+        const cached = dataCache.current[cacheKey];
+        setLimits(cached.limits);
+        setCarbonGoals(cached.carbonGoals);
+        setCurrentUsage(cached.usage);
+        setRecords(cached.records);
+        setElectricFactor(cached.meterFactor);
+        setElectricBaseOffset(cached.baseOffset);
+        setEmissionHistory(cached.emissionHistory);
+        setEmissionFactor(cached.emissionFactor);
+        setLoading(false);
+        return;
+      }
+
+      // 五個請求全部並行
+      const [
+        factorSnap,
+        carbonSnap,
+        setSnap,
+        querySnapshot,
+        rainYearSnap,
+      ] = await Promise.all([
+        getDoc(doc(db, 'settings', 'electric_factor')),
+        getDoc(doc(db, `settings_${currentYear}`, 'carbon_goals')),
+        getDoc(doc(db, `settings_${currentYear}`, `limits_${currentMonthNum}`)),
+        getDocs(query(collection(db, `usage_records_${currentYear}`), where('month', '==', currentMonthStr))),
+        getDocs(query(collection(db, `usage_records_${currentYear}`), where('type', '==', 'rain'))),
+      ]);
+
+      // --- 處理 factor ---
       let loadedMeterFactor = 4.233;
       let loadedBaseOffset = 0;
+      let rawHistory = { '2000-01': 0.495 };
+      let activeEmissionFactor = 0.495;
 
       if (factorSnap.exists()) {
         const fdata = factorSnap.data();
         loadedMeterFactor = Number(fdata.meter_factor || fdata.value) || 4.233;
         loadedBaseOffset = Number(fdata.base_offset) || 0;
-        let rawHistory = fdata.emission_history || {};
+        rawHistory = fdata.emission_history || {};
         if (Array.isArray(rawHistory)) {
           const migratedMap = {};
           rawHistory.forEach(h => { if (h.startMonth) migratedMap[h.startMonth] = h.value; });
           rawHistory = migratedMap;
         }
-        setElectricFactor(loadedMeterFactor);
-        setElectricBaseOffset(loadedBaseOffset);
-        setEmissionHistory(rawHistory);
         const sortedMonths = Object.keys(rawHistory).sort((a, b) => b.localeCompare(a));
         const activeMonth = sortedMonths.find(m => m <= currentMonthStr) || sortedMonths[sortedMonths.length - 1];
-        setEmissionFactor(rawHistory[activeMonth] || 0.495);
+        activeEmissionFactor = rawHistory[activeMonth] || 0.495;
       }
+      setElectricFactor(loadedMeterFactor);
+      setElectricBaseOffset(loadedBaseOffset);
+      setEmissionHistory(rawHistory);
+      setEmissionFactor(activeEmissionFactor);
 
-      const carbonSnap = await getDoc(doc(db, `settings_${currentYear}`, "carbon_goals"));
-      if (carbonSnap.exists()) setCarbonGoals(carbonSnap.data());
+      // --- 處理 carbon goals ---
+      const loadedCarbonGoals = carbonSnap.exists() ? carbonSnap.data() : { reductionTarget: 5, baseYearAvg: 1000 };
+      setCarbonGoals(loadedCarbonGoals);
 
-      const setSnap = await getDoc(limitsRef);
-      if (setSnap.exists()) setLimits(setSnap.data());
-      else setLimits({ electric: 1000, water: 500 });
+      // --- 處理 limits ---
+      const loadedLimits = setSnap.exists() ? setSnap.data() : { electric: 1000, water: 500 };
+      setLimits(loadedLimits);
 
-      const q = query(collection(db, `usage_records_${currentYear}`), where('month', '==', currentMonthStr));
-      const querySnapshot = await getDocs(q);
-
-      // Yearly Rain Query
-      const qRainYear = query(collection(db, `usage_records_${currentYear}`), where('type', '==', 'rain'));
-      const rainYearSnap = await getDocs(qRainYear);
-      const allRainYearRecords = rainYearSnap.docs.map(doc => doc.data());
-
+      // --- 處理使用記錄 ---
+      const allRainYearRecords = rainYearSnap.docs.map(d => d.data());
       let recs = [];
       let electricRecords = [];
       let waterRecords = [];
@@ -172,7 +200,6 @@ const Dashboard = () => {
         if (dateDiff !== 0) return dateDiff;
         return (a.createdAt || '').localeCompare(b.createdAt || '');
       };
-
       electricRecords.sort(sortByDateAndCreation);
       waterRecords.sort(sortByDateAndCreation);
       rainRecords.sort(sortByDateAndCreation);
@@ -185,7 +212,7 @@ const Dashboard = () => {
         const totalBase = (base.ml || 0)*1000 + (base.mp1 || 0)*1000 + (base.mp || 0)*1000 + (base.kwh11 || 0) + (base.kwh12 || 0) + (base.kwh13 || 0) + (base.kwh21 || 0) + (base.agv || 0);
         const totalLatest = (latest.ml || 0)*1000 + (latest.mp1 || 0)*1000 + (latest.mp || 0)*1000 + (latest.kwh11 || 0) + (latest.kwh12 || 0) + (latest.kwh13 || 0) + (latest.kwh21 || 0) + (latest.agv || 0);
         e = (totalLatest - totalBase) * loadedMeterFactor + loadedBaseOffset;
-        if (electricRecords.length === 1) e = loadedBaseOffset; 
+        if (electricRecords.length === 1) e = loadedBaseOffset;
       }
 
       let w = 0;
@@ -193,11 +220,10 @@ const Dashboard = () => {
       if (waterBaseRecord && waterRecords.length >= 1) {
         const base = waterBaseRecord.readings;
         const latest = waterRecords[waterRecords.length - 1].readings;
-        // 修正：取當日所有欄位中最大的讀數作為基準，避免漏算晚表
         const maxLatest = Math.max(...Object.values(latest).map(v => Number(v) || 0));
         const minBase = Math.min(...Object.values(base).filter(v => (Number(v) || 0) > 0).map(v => Number(v) || 0));
         w = maxLatest - minBase;
-        if (waterRecords.length === 1) w = 0; 
+        if (waterRecords.length === 1) w = 0;
       }
 
       let rUsage = 0;
@@ -209,19 +235,29 @@ const Dashboard = () => {
         rUsage = maxLastRain - minFirstRain;
       }
 
-      // Calculate Yearly Rain Cumulative: (Latest reading of year - Earliest reading of year)
       let rYearlyUsage = 0;
       if (allRainYearRecords.length > 0) {
         const sortedAll = [...allRainYearRecords].sort((a, b) => new Date(a.date) - new Date(b.date));
-        const yFirst = sortedAll[0];
-        const yLast = sortedAll[sortedAll.length - 1];
-        rYearlyUsage = (yLast.readings?.rain || 0) - (yFirst.readings?.rain || 0);
+        rYearlyUsage = (sortedAll[sortedAll.length - 1].readings?.rain || 0) - (sortedAll[0].readings?.rain || 0);
       }
 
-      setCurrentUsage({ electric: e, water: w, rain: rUsage, rainYearly: rYearlyUsage });
+      const loadedUsage = { electric: e, water: w, rain: rUsage, rainYearly: rYearlyUsage };
+      setCurrentUsage(loadedUsage);
       setRecords(recs);
+
+      // 存入快取
+      dataCache.current[cacheKey] = {
+        limits: loadedLimits,
+        carbonGoals: loadedCarbonGoals,
+        usage: loadedUsage,
+        records: recs,
+        meterFactor: loadedMeterFactor,
+        baseOffset: loadedBaseOffset,
+        emissionHistory: rawHistory,
+        emissionFactor: activeEmissionFactor,
+      };
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
@@ -232,8 +268,16 @@ const Dashboard = () => {
     setTimeout(() => setToast(null), duration);
   };
 
+  // 清除指定月份 cache 再重整（新增/編輯/刪除後呼叫這個）
+  const refreshDashboardData = () => {
+    delete dataCache.current[currentMonthStr];
+    fetchDashboardData(true);
+  };
+
   const handleRefresh = async () => {
-    await fetchDashboardData();
+    // 強制清除快取再重整
+    delete dataCache.current[currentMonthStr];
+    await fetchDashboardData(true);
     showToast('✅ 資料已更新！');
   };
 
@@ -301,7 +345,7 @@ const Dashboard = () => {
     if (window.confirm('確定要刪除這筆紀錄嗎？')) {
       const year = monthStr.substring(0, 4);
       await deleteDoc(doc(db, `usage_records_${year}`, id));
-      fetchDashboardData();
+      refreshDashboardData();
     }
   };
 
@@ -725,10 +769,10 @@ const Dashboard = () => {
         )}
       </div>
 
-      <DataInputModal isOpen={isInputModalOpen} onClose={() => setInputModalOpen(false)} fetchDashboardData={fetchDashboardData} defaultType={inputType} />
-      <LimitSettingModal isOpen={isLimitModalOpen} onClose={() => setLimitModalOpen(false)} year={currentMonthStr.substring(0, 4)} type={inputType} fetchDashboardData={fetchDashboardData} />
-      <FactorSettingModal isOpen={isFactorModalOpen} onClose={() => setFactorModalOpen(false)} currentFactor={electricFactor} currentBaseOffset={electricBaseOffset} currentEmissionFactor={emissionFactor} emissionHistory={emissionHistory} currentMonthStr={currentMonthStr} carbonGoals={carbonGoals} fetchDashboardData={fetchDashboardData} />
-      <EditRecordModal isOpen={!!editRecordData} onClose={() => setEditRecordData(null)} record={editRecordData} fetchDashboardData={fetchDashboardData} />
+      <DataInputModal isOpen={isInputModalOpen} onClose={() => setInputModalOpen(false)} fetchDashboardData={refreshDashboardData} defaultType={inputType} />
+      <LimitSettingModal isOpen={isLimitModalOpen} onClose={() => setLimitModalOpen(false)} year={currentMonthStr.substring(0, 4)} type={inputType} fetchDashboardData={refreshDashboardData} />
+      <FactorSettingModal isOpen={isFactorModalOpen} onClose={() => setFactorModalOpen(false)} currentFactor={electricFactor} currentBaseOffset={electricBaseOffset} currentEmissionFactor={emissionFactor} emissionHistory={emissionHistory} currentMonthStr={currentMonthStr} carbonGoals={carbonGoals} fetchDashboardData={refreshDashboardData} />
+      <EditRecordModal isOpen={!!editRecordData} onClose={() => setEditRecordData(null)} record={editRecordData} fetchDashboardData={refreshDashboardData} />
 
       {/* Toast 通知 */}
       {toast && (
