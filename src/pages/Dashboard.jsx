@@ -28,6 +28,7 @@ const Dashboard = () => {
   const [emissionHistory, setEmissionHistory] = useState({ '2000-01': 0.495 });
 
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState(null);
 
   const [isInputModalOpen, setInputModalOpen] = useState(false);
   const [isLimitModalOpen, setLimitModalOpen] = useState(false);
@@ -226,9 +227,14 @@ const Dashboard = () => {
     }
   };
 
+  const showToast = (msg, duration = 2500) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), duration);
+  };
+
   const handleRefresh = async () => {
     await fetchDashboardData();
-    alert('資料已更新！');
+    showToast('✅ 資料已更新！');
   };
 
   const handleMonthChange = (offset) => setCurrentMonthDate(prev => offset > 0 ? addMonths(prev, offset) : subMonths(prev, Math.abs(offset)));
@@ -723,6 +729,30 @@ const Dashboard = () => {
       <LimitSettingModal isOpen={isLimitModalOpen} onClose={() => setLimitModalOpen(false)} year={currentMonthStr.substring(0, 4)} type={inputType} fetchDashboardData={fetchDashboardData} />
       <FactorSettingModal isOpen={isFactorModalOpen} onClose={() => setFactorModalOpen(false)} currentFactor={electricFactor} currentBaseOffset={electricBaseOffset} currentEmissionFactor={emissionFactor} emissionHistory={emissionHistory} currentMonthStr={currentMonthStr} carbonGoals={carbonGoals} fetchDashboardData={fetchDashboardData} />
       <EditRecordModal isOpen={!!editRecordData} onClose={() => setEditRecordData(null)} record={editRecordData} fetchDashboardData={fetchDashboardData} />
+
+      {/* Toast 通知 */}
+      {toast && (
+        <div style={{
+          position: 'fixed',
+          bottom: '2rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'rgba(34, 197, 94, 0.15)',
+          border: '1px solid rgba(34, 197, 94, 0.4)',
+          color: '#4ade80',
+          padding: '0.75rem 1.5rem',
+          borderRadius: '40px',
+          fontWeight: 700,
+          fontSize: '0.95rem',
+          backdropFilter: 'blur(12px)',
+          boxShadow: '0 4px 20px rgba(34, 197, 94, 0.2)',
+          zIndex: 9999,
+          animation: 'fadeIn 0.3s ease-out',
+          whiteSpace: 'nowrap',
+        }}>
+          {toast}
+        </div>
+      )}
     </>
   );
 };
