@@ -523,12 +523,17 @@ p {
 
 /* Loader */
 .loader-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  width: 100vw;
-  background: var(--bg-dark);
+  background: rgba(20, 22, 26, 0.85);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
 }
 
 .spinner {
