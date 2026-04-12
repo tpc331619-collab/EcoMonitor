@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
 import { doc, getDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
-import { Zap, Droplet, CloudRain, Edit2, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, PenTool, Settings, Calculator, Download, Sparkles, Camera, Cloud, CloudDrizzle, Sun, CloudRain as RainIcon, WifiOff, CloudOff, TrendingDown, Calendar, Globe, Leaf, Target } from 'lucide-react';
+import { Zap, Droplet, CloudRain, Edit2, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, PenTool, Settings, Calculator, Download, Sparkles, Camera, Cloud, CloudDrizzle, Sun, CloudRain as RainIcon, WifiOff, CloudOff, TrendingDown, Calendar, Globe, Leaf, Target, RefreshCw } from 'lucide-react';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { format, addMonths, subMonths, startOfMonth } from 'date-fns';
 import * as XLSX from 'xlsx';
@@ -226,6 +226,11 @@ const Dashboard = () => {
     }
   };
 
+  const handleRefresh = async () => {
+    await fetchDashboardData();
+    alert('資料已更新！');
+  };
+
   const handleMonthChange = (offset) => setCurrentMonthDate(prev => offset > 0 ? addMonths(prev, offset) : subMonths(prev, Math.abs(offset)));
 
   const getDaysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -393,6 +398,9 @@ const Dashboard = () => {
             </div>
             <button className="nav-btn" onClick={() => handleMonthChange(1)} title="後一個月"><ChevronRight size={16} /></button>
             <button className="nav-btn-today" onClick={() => setCurrentMonthDate(startOfMonth(new Date()))}>本月</button>
+            <button className="nav-btn-today" onClick={handleRefresh} style={{ display: 'flex', alignItems: 'center', gap: '4px' }} title="重新整理資料">
+              <RefreshCw size={14} /> 更新
+            </button>
           </div>
         </div>
 
