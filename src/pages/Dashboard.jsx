@@ -4,7 +4,7 @@ import { db } from '../firebase';
 import { doc, getDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { Zap, Droplet, CloudRain, Edit2, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, PenTool, Settings, Calculator, Sparkles, Camera, Cloud, CloudDrizzle, Sun, CloudRain as RainIcon, WifiOff, CloudOff, TrendingDown, Calendar, Globe, Leaf, Target, RefreshCw } from 'lucide-react';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
-import { format, addMonths, subMonths, startOfMonth } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, endOfWeek } from 'date-fns';
 import { toBlob, toPng } from 'html-to-image';
 import DataInputModal from '../components/DataInputModal';
 import EditRecordModal from '../components/EditRecordModal';
@@ -291,8 +291,10 @@ const Dashboard = () => {
 
   const daysTotal = getDaysInMonth(currentMonthDate);
   const daysPassed = getDaysPassed(currentMonthDate);
-  const currentWeek = Math.ceil(daysPassed / 7);
-  const benchDays = Math.min(daysTotal, currentWeek * 7);
+  const now = new Date();
+  const isCurrentMonth = currentMonthDate.getMonth() === now.getMonth() && currentMonthDate.getFullYear() === now.getFullYear();
+  const SundayOfThisWeek = endOfWeek(now, { weekStartsOn: 1 });
+  const benchDays = isCurrentMonth ? Math.min(daysTotal, SundayOfThisWeek.getDate()) : daysTotal;
 
   const eLimit = limits.electric || 1;
   const wLimit = limits.water || 1;
