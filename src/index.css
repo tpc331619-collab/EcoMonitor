@@ -424,6 +424,56 @@ p {
   height: 100%;
   border-radius: 6px;
   transition: width 0.5s ease-out, background-color 0.3s ease;
+  background-image: linear-gradient(
+    -45deg, 
+    rgba(255, 255, 255, 0.1) 25%, 
+    transparent 25%, 
+    transparent 50%, 
+    rgba(255, 255, 255, 0.1) 50%, 
+    rgba(255, 255, 255, 0.1) 75%, 
+    transparent 75%, 
+    transparent
+  );
+  background-size: 40px 40px;
+  animation: progress-flow 2s linear infinite;
+}
+
+@keyframes progress-flow {
+  0% { background-position: 0 0; }
+  100% { background-position: 40px 0; }
+}
+
+@keyframes pulse-bar {
+  0% { height: 4px; opacity: 0.4; }
+  100% { height: 18px; opacity: 1; }
+}
+
+@keyframes spark-wave {
+  0% { stroke-dashoffset: 100; opacity: 0.6; }
+  50% { opacity: 1; filter: drop-shadow(0 0 4px var(--color-electric)); }
+  100% { stroke-dashoffset: 0; opacity: 0.6; }
+}
+
+@keyframes water-flow {
+  0% { stroke-dashoffset: 60; }
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes rain-fall {
+  0% { transform: translateY(-8px); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateY(8px); opacity: 0; }
+}
+
+@keyframes drip {
+  0% { transform: translateY(0) scale(0.8); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateY(10px) scale(0.5); opacity: 0; }
+}
+
+@keyframes level-wave {
+  0%, 100% { height: 40%; }
+  50% { height: 65%; }
 }
 
 /* Card metrics */

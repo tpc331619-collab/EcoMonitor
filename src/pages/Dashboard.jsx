@@ -390,6 +390,81 @@ const Dashboard = () => {
 
   const getDisplayList = (list) => isHistoryExpanded ? list : list.slice(0, 2);
 
+  const LivePulse = ({ color }) => (
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '18px', marginLeft: '12px', opacity: 0.6 }}>
+      {[0, 1, 2, 3, 4].map(i => (
+        <div 
+          key={i}
+          style={{
+            width: '2px',
+            backgroundColor: color,
+            borderRadius: '10px',
+            animation: `pulse-bar 0.6s ease-in-out infinite alternate`,
+            animationDelay: `${i * 0.1}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+
+  const ElectricTowerPulse = ({ color }) => (
+    <div style={{ marginLeft: '12px', display: 'flex', alignItems: 'center', opacity: 0.8, width: '24px' }}>
+      <svg width="22" height="20" viewBox="0 0 22 20" fill="none">
+        {/* 電塔主體 */}
+        <path d="M11 2 L17 18 M11 2 L5 18 M5 8 L17 8 M3 14 L19 14" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+        {/* 塔頂能量點 */}
+        <circle cx="11" cy="2" r="2" fill={color} style={{ animation: 'logoPulse 1s infinite' }} />
+        {/* 旁邊的能量波 */}
+        <path d="M14 4 Q18 2 20 6" stroke={color} strokeWidth="1" strokeLinecap="round" style={{ opacity: 0.5, animation: 'pulse-bar 1.5s infinite alternate' }} />
+        <path d="M8 4 Q4 2 2 6" stroke={color} strokeWidth="1" strokeLinecap="round" style={{ opacity: 0.5, animation: 'pulse-bar 1.5s infinite alternate', animationDelay: '0.5s' }} />
+      </svg>
+    </div>
+  );
+
+
+  const FaucetPulse = ({ color }) => (
+    <div style={{ marginLeft: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: 0.8, width: '20px' }}>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+        <path d="M2 10 L10 10 L10 6 L14 6 L14 8" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <rect x="8" y="2" width="4" height="2" fill={color} />
+      </svg>
+      <div style={{
+        width: '3px',
+        height: '5px',
+        backgroundColor: color,
+        borderRadius: '50%',
+        animation: 'drip 1.2s infinite cubic-bezier(0.4, 0, 0.2, 1)',
+        marginTop: '-2px'
+      }} />
+    </div>
+  );
+
+  const RainTowerPulse = ({ color }) => (
+    <div style={{ marginLeft: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '24px', opacity: 0.8 }}>
+      <div style={{ position: 'relative', width: '20px', height: '16px', border: `2px solid ${color}`, borderRadius: '2px', overflow: 'hidden' }}>
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: color,
+          opacity: 0.4,
+          animation: 'level-wave 3s infinite ease-in-out'
+        }} />
+        <div style={{
+          position: 'absolute',
+          top: '-2px',
+          left: '50%',
+          width: '2px',
+          height: '4px',
+          backgroundColor: color,
+          transform: 'translateX(-50%)',
+          animation: 'drip 1.5s infinite linear'
+        }} />
+      </div>
+    </div>
+  );
+
   if (loading) return <div className="loader-container"><div className="spinner"></div></div>;
 
   return (
@@ -466,6 +541,7 @@ const Dashboard = () => {
             <div className="metric-value" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '8px', marginBottom: '0.5rem' }}>
               <div style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'baseline', color: 'var(--color-electric)' }}>
                 <span>{Math.round(currentUsage.electric).toLocaleString()}</span><span className="metric-unit">/{eLimit.toLocaleString()} 度</span>
+                <ElectricTowerPulse color="var(--color-electric)" />
               </div>
               <div style={{ fontSize: '0.8rem', fontWeight: 500, maxWidth: '200px', lineHeight: '1.4', marginBottom: '8px' }}>
                 {getAITip('electric', currentUsage.electric, eLimit)}
@@ -505,6 +581,7 @@ const Dashboard = () => {
             <div className="metric-value" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '8px', marginBottom: '0.5rem' }}>
               <div style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'baseline', color: 'var(--color-water)' }}>
                 <span>{Math.round(currentUsage.water).toLocaleString()}</span><span className="metric-unit">/{wLimit.toLocaleString()} 度</span>
+                <FaucetPulse color="var(--color-water)" />
               </div>
               <div style={{ fontSize: '0.8rem', fontWeight: 500, maxWidth: '200px', lineHeight: '1.4', marginBottom: '8px' }}>
                 {getAITip('water', currentUsage.water, wLimit)}
@@ -545,6 +622,7 @@ const Dashboard = () => {
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
                 <span style={{ fontSize: '3rem', fontWeight: 800 }}>{Math.round(currentUsage.rain).toLocaleString()}</span>
                 <span className="metric-unit">度</span>
+                <RainTowerPulse color="var(--color-rain)" />
               </div>
               <div style={{ fontSize: '0.8rem', fontWeight: 500 }}>
                 {getAITip('rain', currentUsage.rain)}
@@ -576,6 +654,7 @@ const Dashboard = () => {
               <div className="metric-value" style={{ color: isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)', marginTop: '1rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'baseline', gap: '10px' }}>
                 <span style={{ fontSize: '3.5rem', fontWeight: 800 }}>{Math.round(currentUsage.electric * emissionFactor).toLocaleString()}</span>
                 <span className="metric-unit">/ {carbonBudget.toLocaleString()} kg CO2e</span>
+                <LivePulse color={isCarbonExceeded ? 'var(--color-error)' : 'var(--color-success)'} />
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem', paddingLeft: '4px' }}>
                 💡 計算方式：累積用電 {Math.round(currentUsage.electric).toLocaleString()} 度 × 係數 {emissionFactor}
