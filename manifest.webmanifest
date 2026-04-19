@@ -1,1 +1,23 @@
-{"name":"Eco-M 能源管理","short_name":"Eco-M","description":"水電費與能源監控系統","start_url":"/EcoMonitor/","display":"standalone","background_color":"#0f172a","theme_color":"#0f172a","lang":"en","scope":"/EcoMonitor/","icons":[{"src":"pwa-192x192.png","sizes":"192x192","type":"image/png"},{"src":"pwa-512x512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}
+{
+  "name": "Eco-M 能源管理",
+  "short_name": "Eco-M",
+  "description": "水電費與能源監控系統",
+  "theme_color": "#0f172a",
+  "background_color": "#0f172a",
+  "display": "standalone",
+  "icons": [
+    {
+      "src": "pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "orientation": "portrait"
+}
