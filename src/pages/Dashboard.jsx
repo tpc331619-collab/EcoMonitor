@@ -11,6 +11,28 @@ import EditRecordModal from '../components/EditRecordModal';
 import LimitSettingModal from '../components/LimitSettingModal';
 import FactorSettingModal from '../components/FactorSettingModal';
 
+const AmbienceLayer = ({ type }) => {
+  if (!type) return null;
+  return (
+    <div className="ambience-container">
+      <div className="atmosphere-wave" />
+      <div className="atmosphere-wave wave-slow" />
+      {type === 'rain' && (
+        <div className="rain-overlay">
+          {[...Array(25)].map((_, i) => (
+            <div key={`drop-${i}`} className="drop" style={{ left: `${Math.random() * 100}%`, animationDuration: `${0.6 + Math.random() * 0.4}s`, animationDelay: `${Math.random() * 2}s`, opacity: 0.2 + Math.random() * 0.2 }} />
+          ))}
+          {[...Array(5)].map((_, i) => (
+            <div key={`ripple-${i}`} className="ripple" style={{ top: `${Math.random() * 100}%`, left: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 5}s`, width: `${30 + Math.random() * 40}px`, height: `${20 + Math.random() * 30}px` }} />
+          ))}
+        </div>
+      )}
+      {type === 'sun' && <div className="sun-overlay" />}
+    </div>
+  );
+};
+
+
 const Dashboard = () => {
   const { role } = useAuth();
   const isOnline = useNetworkStatus();
@@ -47,6 +69,13 @@ const Dashboard = () => {
     fetchDashboardData();
     fetchWeatherData();
   }, [currentMonthDate]);
+
+  useEffect(() => {
+    const themeClass = `theme-${weather.icon || 'sun'}`;
+    document.body.classList.remove('theme-sun', 'theme-cloud', 'theme-rain');
+    document.body.classList.add(themeClass);
+    return () => { document.body.classList.remove(themeClass); };
+  }, [weather.icon]);
 
   const fetchWeatherData = async () => {
     if (!isOnline) {
@@ -472,6 +501,8 @@ const Dashboard = () => {
   return (
     <>
       <div className="fade-in">
+        <AmbienceLayer type={weather.icon} />
+
         <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '1.5rem', flexWrap: 'wrap' }}>
             <h1 style={{ 

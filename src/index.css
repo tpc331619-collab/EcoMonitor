@@ -774,3 +774,124 @@ p {
   100% { transform: scale(1); opacity: 0.8; }
 }
 
+/* --- Dynamic Environmental Ambience 2.0 --- */
+
+/* Theme Variables Overrides */
+.theme-sun {
+  --bg-main: #1a1c24;
+  --bg-sidebar: #0f1115;
+  --ambience-accent: rgba(251, 191, 36, 0.1);
+}
+
+.theme-cloud {
+  --bg-main: #14161a;
+  --bg-sidebar: #0b0d10;
+  --ambience-accent: rgba(148, 163, 184, 0.08);
+}
+
+.theme-rain {
+  --bg-main: #0f172a;
+  --bg-sidebar: #020617;
+  --ambience-accent: rgba(56, 189, 248, 0.12);
+}
+
+/* Ambience Overlays */
+.ambience-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  transition: background 2s ease;
+}
+
+/* 1. Mesh Gradient (用於多雲/晴天) */
+.theme-cloud .ambience-container {
+  background: 
+    radial-gradient(at 0% 0%, rgba(30, 41, 59, 0.4) 0px, transparent 50%),
+    radial-gradient(at 50% 0%, rgba(15, 23, 42, 0.4) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(30, 41, 59, 0.4) 0px, transparent 50%);
+  background-size: 200% 200%;
+  animation: mesh-flow 15s ease infinite alternate;
+}
+
+@keyframes mesh-flow {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 100% 100%; }
+}
+
+/* 2. Atmospheric Waves (層疊波浪) */
+.atmosphere-wave {
+  position: absolute;
+  width: 200%;
+  height: 100%;
+  top: 0;
+  left: -50%;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 600'%3E%3Cpath d='M0,400 Q200,300 400,400 T800,400 L800,600 L0,600 Z' fill='rgba(255,255,255,0.015)'/%3E%3C/svg%3E") repeat-x;
+  background-size: 100% 100%;
+  animation: wave-drift 40s linear infinite;
+  opacity: 0.8;
+}
+
+.wave-slow { animation-duration: 60s; opacity: 0.5; top: 10%; }
+
+@keyframes wave-drift {
+  from { transform: translateX(0); }
+  to { transform: translateX(50%); }
+}
+
+/* 3. Rain & Ripples */
+.rain-overlay {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.drop {
+  position: absolute;
+  background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 100%);
+  width: 1px;
+  height: 90px;
+  top: -100px;
+  animation: rain-fall-anim linear infinite;
+}
+
+@keyframes rain-fall-anim {
+  0% { transform: translateY(0) translateX(0); }
+  100% { transform: translateY(110vh) translateX(20px); }
+}
+
+.ripple {
+  position: absolute;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  transform: scale(0);
+  animation: ripple-spread 3s ease-out infinite;
+}
+
+@keyframes ripple-spread {
+  0% { transform: scale(0); opacity: 0.5; }
+  100% { transform: scale(4); opacity: 0; }
+}
+
+/* 4. Sun Pulse (Refined) */
+.sun-overlay {
+  position: absolute;
+  top: -15%;
+  right: -10%;
+  width: 70%;
+  height: 70%;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.06) 0%, transparent 70%);
+  filter: blur(80px);
+  animation: sun-breathe 10s ease-in-out infinite alternate;
+}
+
+@keyframes sun-breathe {
+  0% { opacity: 0.3; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0.6; transform: translate(-20px, 20px) scale(1.1); }
+}
+
+/* --- End of Atmosphere 2.0 --- */
