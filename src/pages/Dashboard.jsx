@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
 import { doc, getDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
-import { Zap, Droplet, CloudRain, Edit2, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, PenTool, Settings, Calculator, Sparkles, Camera, Cloud, CloudDrizzle, Sun, CloudRain as RainIcon, WifiOff, CloudOff, TrendingDown, Calendar, Globe, Leaf, Target, RefreshCw } from 'lucide-react';
+import { Zap, Droplet, CloudRain, Edit2, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, PenTool, Settings, Calculator, Sparkles, Camera, Cloud, CloudDrizzle, Sun, CloudRain as RainIcon, WifiOff, CloudOff, TrendingUp, TrendingDown, Activity, Calendar, Globe, Leaf, Target, RefreshCw } from 'lucide-react';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, endOfWeek } from 'date-fns';
 import { toBlob, toPng } from 'html-to-image';
@@ -362,6 +362,10 @@ const Dashboard = () => {
   const waterPct = Math.min(100, (currentUsage.water / wLimit) * 100);
 
   const eProjected = (currentUsage.electric / daysPassed) * daysTotal;
+  const eDailyAvg = currentUsage.electric / daysPassed;
+  const wProjected = (currentUsage.water / daysPassed) * daysTotal;
+  const wDailyAvg = currentUsage.water / daysPassed;
+  
   const carbonBudget = Math.round(carbonGoals.baseYearAvg * (1 - carbonGoals.reductionTarget / 100) * emissionFactor);
   const carbonProjected = Math.round(eProjected * emissionFactor);
   const isCarbonExceeded = carbonProjected > carbonBudget;
@@ -464,96 +468,6 @@ const Dashboard = () => {
     </div>
   );
 
-  const ElectricTowerPulse = ({ color }) => (
-    <div style={{ marginLeft: '12px', display: 'flex', alignItems: 'center', opacity: 0.9, width: '28px' }}>
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        {/* 背景發光光暈 */}
-        <circle cx="12" cy="12" r="8" fill={color} opacity="0.1">
-          <animate attributeName="r" values="8;11;8" dur="2s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0.1;0.2;0.1" dur="2s" repeatCount="indefinite" />
-        </circle>
-        {/* 核心閃電圖標 */}
-        <path 
-          d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" 
-          fill={color} 
-          style={{ 
-            filter: `drop-shadow(0 0 5px ${color})`,
-            animation: 'logoPulse 1.5s infinite ease-in-out'
-          }} 
-        />
-        {/* 動態環繞圓環 */}
-        <circle 
-          cx="12" cy="12" r="10" 
-          stroke={color} 
-          strokeWidth="0.5" 
-          strokeDasharray="4 8" 
-          opacity="0.3"
-          style={{ animation: 'spin 6s linear infinite' }} 
-        />
-      </svg>
-    </div>
-  );
-
-
-  const FaucetPulse = ({ color }) => (
-    <div style={{ marginLeft: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: 0.9, width: '24px' }}>
-      <svg width="20" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M7 11.5V14a2 2 0 1 1-4 0v-2.5" /><path d="M3 12h4" /><path d="M21 3v2" /><path d="M21 9v2" /><path d="M21 15v2" /><path d="M21 21v2" /><path d="M16 3h5" /><path d="M16 19h5" />
-        <path d="M16 8.5V14a5 5 0 0 1-10 0V8.5" /><path d="M6 3h10" />
-      </svg>
-      {/* 動態水滴 */}
-      <div style={{
-        width: '4px',
-        height: '6px',
-        backgroundColor: color,
-        borderRadius: '50% 50% 40% 40%',
-        animation: 'drip 1.2s infinite cubic-bezier(0.4, 0, 0.2, 1)',
-        marginTop: '-1px',
-        filter: `drop-shadow(0 0 3px ${color})`
-      }} />
-    </div>
-  );
-
-  const RainTowerPulse = ({ color }) => (
-    <div style={{ marginLeft: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '28px', opacity: 0.9 }}>
-      <div style={{ 
-        position: 'relative', 
-        width: '22px', 
-        height: '20px', 
-        border: `1.5px solid ${color}`, 
-        borderRadius: '4px', 
-        overflow: 'hidden',
-        background: 'rgba(255,255,255,0.02)',
-        boxShadow: `inset 0 0 5px ${color}22`
-      }}>
-        {/* 動態波浪水位 */}
-        <div style={{
-          position: 'absolute',
-          bottom: 0,
-          left: '-50%',
-          width: '200%',
-          height: '60%',
-          backgroundColor: color,
-          opacity: 0.3,
-          borderRadius: '40%',
-          animation: 'level-wave 3s infinite linear'
-        }} />
-        {/* 上方滴入效果 */}
-        <div style={{
-          position: 'absolute',
-          top: '2px',
-          left: '50%',
-          width: '2px',
-          height: '4px',
-          backgroundColor: color,
-          borderRadius: '2px',
-          transform: 'translateX(-50%)',
-          animation: 'drip 1.8s infinite ease-in'
-        }} />
-      </div>
-    </div>
-  );
-
   if (loading) return <div className="loader-container"><div className="spinner"></div></div>;
 
   return (
@@ -629,13 +543,53 @@ const Dashboard = () => {
                 )}
               </div>
             </div>
-            <div className="metric-value" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '8px', marginBottom: '0.5rem' }}>
-              <div style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'baseline', color: 'var(--color-electric)' }}>
-                <span>{Math.round(currentUsage.electric).toLocaleString()}</span><span className="metric-unit">/{eLimit.toLocaleString()} 度</span>
-                <ElectricTowerPulse color="var(--color-electric)" />
+            <div className="metric-value" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'nowrap', gap: '8px', marginBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', color: 'var(--color-electric)', gap: '4px', flexShrink: 1, minWidth: 0 }}>
+                <span style={{ fontSize: '2.5rem', fontWeight: 800, whiteSpace: 'nowrap' }}>{Math.round(currentUsage.electric).toLocaleString()}</span>
+                <span className="metric-unit" style={{ fontSize: '0.9rem', opacity: 0.8 }}>/{eLimit.toLocaleString()} 度</span>
               </div>
-              <div style={{ fontSize: '0.8rem', fontWeight: 500, maxWidth: '200px', lineHeight: '1.4', marginBottom: '8px' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 500, maxWidth: '140px', lineHeight: '1.3', textAlign: 'right', flexShrink: 0 }}>
                 {getAITip('electric', currentUsage.electric, eLimit)}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+              <div style={{ 
+                flex: 1,
+                padding: '8px 12px', 
+                background: 'rgba(255, 255, 255, 0.03)', 
+                borderRadius: '8px', 
+                border: '1px solid rgba(255,255,255,0.05)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '6px' }}>
+                  <TrendingUp size={16} className="text-electric" />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '2px' }}>預估月底</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{Math.round(eProjected).toLocaleString()} <span style={{ fontSize: '0.7rem', fontWeight: 500, opacity: 0.7 }}>度</span></div>
+                </div>
+              </div>
+
+              <div style={{ 
+                flex: 1,
+                padding: '8px 12px', 
+                background: 'rgba(255, 255, 255, 0.03)', 
+                borderRadius: '8px', 
+                border: '1px solid rgba(255,255,255,0.05)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '6px' }}>
+                  <Activity size={16} className="text-electric" />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '2px' }}>日均用量</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{eDailyAvg.toFixed(1)} <span style={{ fontSize: '0.7rem', fontWeight: 500, opacity: 0.7 }}>度</span></div>
+                </div>
               </div>
             </div>
             <div style={{ fontSize: '0.75rem', marginBottom: '1rem' }}>
@@ -669,13 +623,53 @@ const Dashboard = () => {
                 )}
               </div>
             </div>
-            <div className="metric-value" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '8px', marginBottom: '0.5rem' }}>
-              <div style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'baseline', color: 'var(--color-water)' }}>
-                <span>{Math.round(currentUsage.water).toLocaleString()}</span><span className="metric-unit">/{wLimit.toLocaleString()} 度</span>
-                <FaucetPulse color="var(--color-water)" />
+            <div className="metric-value" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'nowrap', gap: '8px', marginBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', color: 'var(--color-water)', gap: '4px', flexShrink: 1, minWidth: 0 }}>
+                <span style={{ fontSize: '3rem', fontWeight: 800 }}>{Math.round(currentUsage.water).toLocaleString()}</span>
+                <span className="metric-unit">/{wLimit.toLocaleString()} 度</span>
               </div>
-              <div style={{ fontSize: '0.8rem', fontWeight: 500, maxWidth: '200px', lineHeight: '1.4', marginBottom: '8px' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 500, maxWidth: '180px', lineHeight: '1.4', textAlign: 'right', flexShrink: 0 }}>
                 {getAITip('water', currentUsage.water, wLimit)}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+              <div style={{ 
+                flex: 1,
+                padding: '8px 12px', 
+                background: 'rgba(255, 255, 255, 0.03)', 
+                borderRadius: '8px', 
+                border: '1px solid rgba(255,255,255,0.05)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '6px' }}>
+                  <TrendingUp size={16} className="text-water" />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '2px' }}>預估月底</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{Math.round(wProjected).toLocaleString()} <span style={{ fontSize: '0.7rem', fontWeight: 500, opacity: 0.7 }}>度</span></div>
+                </div>
+              </div>
+
+              <div style={{ 
+                flex: 1,
+                padding: '8px 12px', 
+                background: 'rgba(255, 255, 255, 0.03)', 
+                borderRadius: '8px', 
+                border: '1px solid rgba(255,255,255,0.05)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '6px' }}>
+                  <Activity size={16} className="text-water" />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '2px' }}>日均用量</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{wDailyAvg.toFixed(1)} <span style={{ fontSize: '0.7rem', fontWeight: 500, opacity: 0.7 }}>度</span></div>
+                </div>
               </div>
             </div>
             <div style={{ fontSize: '0.75rem', marginBottom: '1rem' }}>
@@ -709,13 +703,12 @@ const Dashboard = () => {
                 )}
               </div>
             </div>
-            <div className="metric-value text-rain" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+            <div className="metric-value text-rain" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', flexWrap: 'nowrap', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', flexShrink: 1, minWidth: 0 }}>
                 <span style={{ fontSize: '3rem', fontWeight: 800 }}>{Math.round(currentUsage.rain).toLocaleString()}</span>
                 <span className="metric-unit">度</span>
-                <RainTowerPulse color="var(--color-rain)" />
               </div>
-              <div style={{ fontSize: '0.8rem', fontWeight: 500 }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 500, maxWidth: '180px', lineHeight: '1.4', textAlign: 'right', flexShrink: 0 }}>
                 {getAITip('rain', currentUsage.rain)}
               </div>
             </div>
