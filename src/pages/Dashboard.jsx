@@ -4,7 +4,7 @@ import { db } from '../firebase';
 import { doc, getDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { Zap, Droplet, CloudRain, Edit2, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, PenTool, Settings, Calculator, Sparkles, Camera, Cloud, CloudDrizzle, Sun, CloudRain as RainIcon, WifiOff, CloudOff, TrendingDown, Calendar, Globe, Leaf, Target, RefreshCw } from 'lucide-react';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
-import { format, addMonths, subMonths, startOfMonth, endOfWeek } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, endOfWeek } from 'date-fns';
 import { toBlob, toPng } from 'html-to-image';
 import DataInputModal from '../components/DataInputModal';
 import EditRecordModal from '../components/EditRecordModal';
@@ -59,6 +59,7 @@ const Dashboard = () => {
   const [expandedTables, setExpandedTables] = useState({ electric: false, water: false, rain: false });
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
   const [weather, setWeather] = useState({ temp: '--', pop: '--', desc: '載入中...', icon: 'sun', location: '--' });
+  const [rainStats, setRainStats] = useState({ days: 0, amount: 0 });
 
   const electricCardRef = useRef(null);
   const waterCardRef = useRef(null);
@@ -68,6 +69,7 @@ const Dashboard = () => {
   useEffect(() => {
     fetchDashboardData();
     fetchWeatherData();
+    fetchRainHistoryData();
   }, [currentMonthDate]);
 
   useEffect(() => {
@@ -137,6 +139,28 @@ const Dashboard = () => {
     }
   };
 
+  const fetchRainHistoryData = async () => {
+    try {
+      const start = format(startOfMonth(currentMonthDate), 'yyyy-MM-01');
+      const today = new Date();
+      const isCurrentMonth = currentMonthDate.getMonth() === today.getMonth() && currentMonthDate.getFullYear() === today.getFullYear();
+      const end = format(isCurrentMonth ? today : endOfMonth(currentMonthDate), 'yyyy-MM-dd');
+      
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=25.03&longitude=121.08&start_date=${start}&end_date=${end}&daily=precipitation_sum&timezone=Asia/Taipei`;
+      const res = await fetch(url);
+      const data = await res.json();
+      
+      if (data.daily && data.daily.precipitation_sum) {
+        const precipitation = data.daily.precipitation_sum;
+        const days = precipitation.filter(p => p > 0.1).length;
+        const amount = precipitation.reduce((sum, p) => sum + (p || 0), 0);
+        setRainStats({ days, amount: parseFloat(amount.toFixed(1)) });
+      }
+    } catch (err) {
+      console.error("Rain history fetch failed:", err);
+    }
+  };
+
   const fetchDashboardData = async (forceRefresh = false) => {
     setLoading(true);
     try {
@@ -155,6 +179,7 @@ const Dashboard = () => {
         setElectricBaseOffset(cached.baseOffset);
         setEmissionHistory(cached.emissionHistory);
         setEmissionFactor(cached.emissionFactor);
+        if (cached.rainStats) setRainStats(cached.rainStats);
         setLoading(false);
         return;
       }
@@ -283,6 +308,7 @@ const Dashboard = () => {
         baseOffset: loadedBaseOffset,
         emissionHistory: rawHistory,
         emissionFactor: activeEmissionFactor,
+        rainStats: rainStats, // 此時的 rainStats 可能尚未更新，fetchRainHistoryData 會在 useEffect 呼叫
       };
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -305,7 +331,7 @@ const Dashboard = () => {
   const handleRefresh = async () => {
     // 強制清除快取再重整
     delete dataCache.current[currentMonthStr];
-    await fetchDashboardData(true);
+    await Promise.all([fetchDashboardData(true), fetchRainHistoryData()]);
     showToast('✅ 資料已更新！');
   };
 
@@ -691,6 +717,46 @@ const Dashboard = () => {
               </div>
               <div style={{ fontSize: '0.8rem', fontWeight: 500 }}>
                 {getAITip('rain', currentUsage.rain)}
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+              <div style={{ 
+                flex: 1,
+                padding: '8px 12px', 
+                background: 'rgba(255, 255, 255, 0.03)', 
+                borderRadius: '8px', 
+                border: '1px solid rgba(255,255,255,0.05)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '6px' }}>
+                  <RainIcon size={16} className="text-rain" />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '2px' }}>當月雨天</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{rainStats.days} <span style={{ fontSize: '0.7rem', fontWeight: 500, opacity: 0.7 }}>天</span></div>
+                </div>
+              </div>
+
+              <div style={{ 
+                flex: 1,
+                padding: '8px 12px', 
+                background: 'rgba(255, 255, 255, 0.03)', 
+                borderRadius: '8px', 
+                border: '1px solid rgba(255,255,255,0.05)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '6px' }}>
+                  <Droplet size={16} className="text-rain" />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '2px' }}>當月降雨</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{rainStats.amount} <span style={{ fontSize: '0.7rem', fontWeight: 500, opacity: 0.7 }}>mm</span></div>
+                </div>
               </div>
             </div>
             
