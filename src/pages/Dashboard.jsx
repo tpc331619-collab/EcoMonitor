@@ -439,58 +439,90 @@ const Dashboard = () => {
   );
 
   const ElectricTowerPulse = ({ color }) => (
-    <div style={{ marginLeft: '12px', display: 'flex', alignItems: 'center', opacity: 0.8, width: '24px' }}>
-      <svg width="22" height="20" viewBox="0 0 22 20" fill="none">
-        {/* 電塔主體 */}
-        <path d="M11 2 L17 18 M11 2 L5 18 M5 8 L17 8 M3 14 L19 14" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-        {/* 塔頂能量點 */}
-        <circle cx="11" cy="2" r="2" fill={color} style={{ animation: 'logoPulse 1s infinite' }} />
-        {/* 旁邊的能量波 */}
-        <path d="M14 4 Q18 2 20 6" stroke={color} strokeWidth="1" strokeLinecap="round" style={{ opacity: 0.5, animation: 'pulse-bar 1.5s infinite alternate' }} />
-        <path d="M8 4 Q4 2 2 6" stroke={color} strokeWidth="1" strokeLinecap="round" style={{ opacity: 0.5, animation: 'pulse-bar 1.5s infinite alternate', animationDelay: '0.5s' }} />
+    <div style={{ marginLeft: '12px', display: 'flex', alignItems: 'center', opacity: 0.9, width: '28px' }}>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        {/* 背景發光光暈 */}
+        <circle cx="12" cy="12" r="8" fill={color} opacity="0.1">
+          <animate attributeName="r" values="8;11;8" dur="2s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.1;0.2;0.1" dur="2s" repeatCount="indefinite" />
+        </circle>
+        {/* 核心閃電圖標 */}
+        <path 
+          d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" 
+          fill={color} 
+          style={{ 
+            filter: `drop-shadow(0 0 5px ${color})`,
+            animation: 'logoPulse 1.5s infinite ease-in-out'
+          }} 
+        />
+        {/* 動態環繞圓環 */}
+        <circle 
+          cx="12" cy="12" r="10" 
+          stroke={color} 
+          strokeWidth="0.5" 
+          strokeDasharray="4 8" 
+          opacity="0.3"
+          style={{ animation: 'spin 6s linear infinite' }} 
+        />
       </svg>
     </div>
   );
 
 
   const FaucetPulse = ({ color }) => (
-    <div style={{ marginLeft: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: 0.8, width: '20px' }}>
-      <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
-        <path d="M2 10 L10 10 L10 6 L14 6 L14 8" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <rect x="8" y="2" width="4" height="2" fill={color} />
+    <div style={{ marginLeft: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: 0.9, width: '24px' }}>
+      <svg width="20" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M7 11.5V14a2 2 0 1 1-4 0v-2.5" /><path d="M3 12h4" /><path d="M21 3v2" /><path d="M21 9v2" /><path d="M21 15v2" /><path d="M21 21v2" /><path d="M16 3h5" /><path d="M16 19h5" />
+        <path d="M16 8.5V14a5 5 0 0 1-10 0V8.5" /><path d="M6 3h10" />
       </svg>
+      {/* 動態水滴 */}
       <div style={{
-        width: '3px',
-        height: '5px',
+        width: '4px',
+        height: '6px',
         backgroundColor: color,
-        borderRadius: '50%',
+        borderRadius: '50% 50% 40% 40%',
         animation: 'drip 1.2s infinite cubic-bezier(0.4, 0, 0.2, 1)',
-        marginTop: '-2px'
+        marginTop: '-1px',
+        filter: `drop-shadow(0 0 3px ${color})`
       }} />
     </div>
   );
 
   const RainTowerPulse = ({ color }) => (
-    <div style={{ marginLeft: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '24px', opacity: 0.8 }}>
-      <div style={{ position: 'relative', width: '20px', height: '16px', border: `2px solid ${color}`, borderRadius: '2px', overflow: 'hidden' }}>
+    <div style={{ marginLeft: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '28px', opacity: 0.9 }}>
+      <div style={{ 
+        position: 'relative', 
+        width: '22px', 
+        height: '20px', 
+        border: `1.5px solid ${color}`, 
+        borderRadius: '4px', 
+        overflow: 'hidden',
+        background: 'rgba(255,255,255,0.02)',
+        boxShadow: `inset 0 0 5px ${color}22`
+      }}>
+        {/* 動態波浪水位 */}
         <div style={{
           position: 'absolute',
           bottom: 0,
-          left: 0,
-          right: 0,
+          left: '-50%',
+          width: '200%',
+          height: '60%',
           backgroundColor: color,
-          opacity: 0.4,
-          animation: 'level-wave 3s infinite ease-in-out'
+          opacity: 0.3,
+          borderRadius: '40%',
+          animation: 'level-wave 3s infinite linear'
         }} />
+        {/* 上方滴入效果 */}
         <div style={{
           position: 'absolute',
-          top: '-2px',
+          top: '2px',
           left: '50%',
           width: '2px',
           height: '4px',
           backgroundColor: color,
+          borderRadius: '2px',
           transform: 'translateX(-50%)',
-          animation: 'drip 1.5s infinite linear'
+          animation: 'drip 1.8s infinite ease-in'
         }} />
       </div>
     </div>
