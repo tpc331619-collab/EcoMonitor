@@ -8,7 +8,7 @@
   /* 保持既有的配色組合 (黃/藍/綠) */
   --color-electric: #fbbf24;    /* 用電量 (黃) */
   --color-water: #38bdf8;       /* 自來水 (藍/青) */
-  --color-rain: #f97316;        /* 雨水回收 (亮橘色) */
+  --color-rain: #ffffff;        /* 雨水回收 (改為白色) */
   --color-carbon: #22c55e;      /* 碳排量 (已改為綠色) */
   --color-success: #22c55e;
   

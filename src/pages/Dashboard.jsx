@@ -636,7 +636,7 @@ const Dashboard = () => {
             <div className="progress-container"><div className="progress-bar" style={{ width: `${waterPct}%`, backgroundColor: waterPct >= 90 ? 'var(--color-error)' : 'var(--color-water)' }} /></div>
           </div>
 
-          <div className="glass-panel metric-card" ref={rainCardRef} style={{ borderColor: 'var(--color-rain)', boxShadow: '0 0 15px rgba(249, 115, 22, 0.05)' }}>
+          <div className="glass-panel metric-card" ref={rainCardRef} style={{ borderColor: 'var(--color-rain)', boxShadow: '0 0 15px rgba(255, 255, 255, 0.05)' }}>
             <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 className="text-rain" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px', fontSize: 'clamp(0.9rem, 4vw, 1.1rem)' }}>
                 <CloudRain size={18} /> {currentMonthStr.replace('-', '/')} 累積雨水回收量
