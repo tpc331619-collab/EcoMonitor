@@ -35,6 +35,36 @@ const HistoryPage = () => {
     setLoading(false);
   };
 
+  const renderValueWithDiff = (val, prevVal) => {
+    const num = Number(val) || 0;
+    if (prevVal === undefined || prevVal === null) return num.toLocaleString();
+    const pNum = Number(prevVal) || 0;
+    const diff = num - pNum;
+    
+    let display = '';
+    let color = 'var(--text-muted)';
+    
+    if (diff > 0) {
+      display = `+${diff.toLocaleString(undefined, { maximumFractionDigits: 3 })}↑`;
+      color = 'var(--color-error)'; // 紅色
+    } else if (diff < 0) {
+      display = `${diff.toLocaleString(undefined, { maximumFractionDigits: 3 })}↓`;
+      color = 'var(--color-warning)'; // 黃色
+    } else {
+      display = '+0';
+      color = 'var(--color-success)'; // 綠色
+    }
+
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <span>{num.toLocaleString()}</span>
+        <span style={{ fontSize: '0.7rem', color, fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+          {display}
+        </span>
+      </div>
+    );
+  };
+
   const handleDelete = async (monthStr, id) => {
     if (window.confirm('確定要刪除這筆歷史紀錄嗎？')) {
       try {
@@ -191,25 +221,28 @@ const HistoryPage = () => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {electrics.map(r => (
-                                  <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <td style={{ padding: '0.8rem' }}>{format(new Date(r.date), 'MM/dd')}</td>
-                                    <td style={{ padding: '0.8rem' }}>{r.readings?.ml?.toLocaleString()}</td>
-                                    <td style={{ padding: '0.8rem' }}>{r.readings?.mp1?.toLocaleString()}</td>
-                                    <td style={{ padding: '0.8rem' }}>{r.readings?.mp?.toLocaleString()}</td>
-                                    <td style={{ padding: '0.8rem' }}>{r.readings?.kwh11?.toLocaleString()}</td>
-                                    <td style={{ padding: '0.8rem' }}>{r.readings?.kwh12?.toLocaleString()}</td>
-                                    <td style={{ padding: '0.8rem' }}>{r.readings?.kwh13?.toLocaleString()}</td>
-                                    <td style={{ padding: '0.8rem' }}>{r.readings?.kwh21?.toLocaleString()}</td>
-                                    <td style={{ padding: '0.8rem' }}>{r.readings?.agv?.toLocaleString()}</td>
-                                    {role === 'admin' && (
-                                      <td style={{ padding: '0.8rem', textAlign: 'right' }}>
-                                        <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer', marginRight: '0.8rem' }}><Edit2 size={14} /></button>
-                                        <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
-                                      </td>
-                                    )}
-                                  </tr>
-                                ))}
+                                {electrics.map((r, idx) => {
+                                  const prevR = electrics[idx + 1];
+                                  return (
+                                    <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                      <td style={{ padding: '0.8rem' }}>{format(new Date(r.date), 'MM/dd')}</td>
+                                      <td style={{ padding: '0.8rem' }}>{renderValueWithDiff(r.readings?.ml, prevR?.readings?.ml)}</td>
+                                      <td style={{ padding: '0.8rem' }}>{renderValueWithDiff(r.readings?.mp1, prevR?.readings?.mp1)}</td>
+                                      <td style={{ padding: '0.8rem' }}>{renderValueWithDiff(r.readings?.mp, prevR?.readings?.mp)}</td>
+                                      <td style={{ padding: '0.8rem' }}>{renderValueWithDiff(r.readings?.kwh11, prevR?.readings?.kwh11)}</td>
+                                      <td style={{ padding: '0.8rem' }}>{renderValueWithDiff(r.readings?.kwh12, prevR?.readings?.kwh12)}</td>
+                                      <td style={{ padding: '0.8rem' }}>{renderValueWithDiff(r.readings?.kwh13, prevR?.readings?.kwh13)}</td>
+                                      <td style={{ padding: '0.8rem' }}>{renderValueWithDiff(r.readings?.kwh21, prevR?.readings?.kwh21)}</td>
+                                      <td style={{ padding: '0.8rem' }}>{renderValueWithDiff(r.readings?.agv, prevR?.readings?.agv)}</td>
+                                      {role === 'admin' && (
+                                        <td style={{ padding: '0.8rem', textAlign: 'right' }}>
+                                          <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer', marginRight: '0.8rem' }}><Edit2 size={14} /></button>
+                                          <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                        </td>
+                                      )}
+                                    </tr>
+                                  );
+                                })}
                               </tbody>
                             </table>
                           </div>
@@ -233,19 +266,22 @@ const HistoryPage = () => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {waters.map(r => (
-                                  <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <td style={{ padding: '0.8rem' }}>{format(new Date(r.date), 'MM/dd')}</td>
-                                    <td style={{ padding: '0.8rem' }}>{r.readings?.total?.toLocaleString()}</td>
-                                    <td style={{ padding: '0.8rem' }}>{r.readings?.drink?.toLocaleString()}</td>
-                                    {role === 'admin' && (
-                                      <td style={{ padding: '0.8rem', textAlign: 'right' }}>
-                                        <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer', marginRight: '0.8rem' }}><Edit2 size={14} /></button>
-                                        <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
-                                      </td>
-                                    )}
-                                  </tr>
-                                ))}
+                                {waters.map((r, idx) => {
+                                  const prevR = waters[idx + 1];
+                                  return (
+                                    <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                      <td style={{ padding: '0.8rem' }}>{format(new Date(r.date), 'MM/dd')}</td>
+                                      <td style={{ padding: '0.8rem' }}>{renderValueWithDiff(r.readings?.total, prevR?.readings?.total)}</td>
+                                      <td style={{ padding: '0.8rem' }}>{renderValueWithDiff(r.readings?.drink, prevR?.readings?.drink)}</td>
+                                      {role === 'admin' && (
+                                        <td style={{ padding: '0.8rem', textAlign: 'right' }}>
+                                          <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer', marginRight: '0.8rem' }}><Edit2 size={14} /></button>
+                                          <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                        </td>
+                                      )}
+                                    </tr>
+                                  );
+                                })}
                               </tbody>
                             </table>
                           </div>
@@ -268,18 +304,21 @@ const HistoryPage = () => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {rains.map(r => (
-                                  <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <td style={{ padding: '0.8rem' }}>{format(new Date(r.date), 'MM/dd')}</td>
-                                    <td style={{ padding: '0.8rem' }}>{r.readings?.rain?.toLocaleString()}</td>
-                                    {role === 'admin' && (
-                                      <td style={{ padding: '0.8rem', textAlign: 'right' }}>
-                                        <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer', marginRight: '0.8rem' }}><Edit2 size={14} /></button>
-                                        <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
-                                      </td>
-                                    )}
-                                  </tr>
-                                ))}
+                                {rains.map((r, idx) => {
+                                  const prevR = rains[idx + 1];
+                                  return (
+                                    <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                      <td style={{ padding: '0.8rem' }}>{format(new Date(r.date), 'MM/dd')}</td>
+                                      <td style={{ padding: '0.8rem' }}>{renderValueWithDiff(r.readings?.rain, prevR?.readings?.rain)}</td>
+                                      {role === 'admin' && (
+                                        <td style={{ padding: '0.8rem', textAlign: 'right' }}>
+                                          <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer', marginRight: '0.8rem' }}><Edit2 size={14} /></button>
+                                          <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                        </td>
+                                      )}
+                                    </tr>
+                                  );
+                                })}
                               </tbody>
                             </table>
                           </div>

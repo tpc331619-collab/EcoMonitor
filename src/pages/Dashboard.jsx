@@ -895,18 +895,18 @@ const Dashboard = () => {
                                     </thead>
                                     <tbody>
                                       {electrics.map((r, idx) => {
-                                        const baseR = electrics[electrics.length - 1]; // 當月第一筆
+                                        const prevR = electrics[idx + 1]; // 下一筆（時間上是前一天）
                                         return (
                                           <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                             <td style={{ padding: '0.8rem', textAlign: 'center' }}>{format(new Date(r.date), 'MM/dd')}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.ml, baseR?.readings?.ml, idx === 0)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.mp1, baseR?.readings?.mp1, idx === 0)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.mp, baseR?.readings?.mp, idx === 0)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh11, baseR?.readings?.kwh11, idx === 0)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh12, baseR?.readings?.kwh12, idx === 0)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh13, baseR?.readings?.kwh13, idx === 0)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh21, baseR?.readings?.kwh21, idx === 0)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.agv, baseR?.readings?.agv, idx === 0)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.ml, prevR?.readings?.ml, true)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.mp1, prevR?.readings?.mp1, true)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.mp, prevR?.readings?.mp, true)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh11, prevR?.readings?.kwh11, true)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh12, prevR?.readings?.kwh12, true)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh13, prevR?.readings?.kwh13, true)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh21, prevR?.readings?.kwh21, true)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.agv, prevR?.readings?.agv, true)}</td>
                                             <td style={{ padding: '0.8rem', textAlign: 'right' }}>
                                               <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', marginRight: '10px' }}><Edit2 size={14} /></button>
                                               <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
@@ -938,12 +938,12 @@ const Dashboard = () => {
                                     </thead>
                                     <tbody>
                                       {waters.map((r, idx) => {
-                                        const baseR = waters[waters.length - 1]; // 當月第一筆
+                                        const prevR = waters[idx + 1]; // 下一筆（時間上是前一天）
                                         return (
                                           <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                             <td style={{ padding: '0.8rem', textAlign: 'center' }}>{format(new Date(r.date), 'MM/dd')}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.total, baseR?.readings?.total, idx === 0)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.drink, baseR?.readings?.drink, idx === 0)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.total, prevR?.readings?.total, true)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.drink, prevR?.readings?.drink, true)}</td>
                                             <td style={{ padding: '0.8rem', textAlign: 'right' }}>
                                               <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', marginRight: '10px' }}><Edit2 size={14} /></button>
                                               <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
@@ -974,11 +974,11 @@ const Dashboard = () => {
                                     </thead>
                                     <tbody>
                                       {rains.map((r, idx) => {
-                                        const baseR = rains[rains.length - 1]; // 當月第一筆
+                                        const prevR = rains[idx + 1]; // 下一筆（時間上是前一天）
                                         return (
                                           <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                             <td style={{ padding: '0.8rem', textAlign: 'center' }}>{format(new Date(r.date), 'MM/dd')}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.rain, baseR?.readings?.rain, idx === 0)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.rain, prevR?.readings?.rain, true)}</td>
                                             <td style={{ padding: '0.8rem', textAlign: 'right' }}>
                                               <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', marginRight: '10px' }}><Edit2 size={14} /></button>
                                               <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
