@@ -1,9 +1,9 @@
 :root {
-  /* 切換為沉穩鐵灰背景 */
-  --bg-main: #14161a;           /* 深鐵灰 */
-  --bg-sidebar: #0b0d10;        /* 更深的金屬灰 */
-  --panel-bg: rgba(26, 28, 35, 0.85); /* 鐵灰玻璃質感 */
-  --panel-border: rgba(255, 255, 255, 0.08);
+  /* 切換為沉穩鐵灰背景 - 調亮基礎色調 */
+  --bg-main: #1e2229;           /* 調亮一些的深鐵灰 */
+  --bg-sidebar: #13151a;        /* 調亮一點的金屬深灰 */
+  --panel-bg: rgba(30, 34, 45, 0.82); /* 稍微調亮玻璃質感 */
+  --panel-border: rgba(255, 255, 255, 0.12);
   
   /* 保持既有的配色組合 (黃/藍/綠) */
   --color-electric: #fbbf24;    /* 用電量 (黃) */
@@ -776,23 +776,23 @@ p {
 
 /* --- Dynamic Environmental Ambience 2.0 --- */
 
-/* Theme Variables Overrides */
+/* Theme Variables Overrides - 根據氣候主題動態調整背景色 */
 .theme-sun {
-  --bg-main: #1a1c24;
-  --bg-sidebar: #0f1115;
-  --ambience-accent: rgba(251, 191, 36, 0.1);
+  --bg-main: #2a2e38;      /* 晴天使用更亮的色調 */
+  --bg-sidebar: #1a1c24;
+  --ambience-accent: rgba(251, 191, 36, 0.2);
 }
 
 .theme-cloud {
-  --bg-main: #14161a;
-  --bg-sidebar: #0b0d10;
-  --ambience-accent: rgba(148, 163, 184, 0.08);
+  --bg-main: #1e2229;
+  --bg-sidebar: #13151a;
+  --ambience-accent: rgba(148, 163, 184, 0.15);
 }
 
 .theme-rain {
-  --bg-main: #0f172a;
-  --bg-sidebar: #020617;
-  --ambience-accent: rgba(56, 189, 248, 0.12);
+  --bg-main: #1a1f2e;      /* 雨天使用稍顯深邃但帶有藍色調的深色 */
+  --bg-sidebar: #0a0d14;
+  --ambience-accent: rgba(56, 189, 248, 0.25);
 }
 
 /* Ambience Overlays */
@@ -830,13 +830,13 @@ p {
   height: 100%;
   top: 0;
   left: -50%;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 600'%3E%3Cpath d='M0,400 Q200,300 400,400 T800,400 L800,600 L0,600 Z' fill='rgba(255,255,255,0.015)'/%3E%3C/svg%3E") repeat-x;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 600'%3E%3Cpath d='M0,400 Q200,300 400,400 T800,400 L800,600 L0,600 Z' fill='rgba(255,255,255,0.025)'/%3E%3C/svg%3E") repeat-x;
   background-size: 100% 100%;
   animation: wave-drift 40s linear infinite;
-  opacity: 0.8;
+  opacity: 1; /* 提高波浪不透明度 */
 }
 
-.wave-slow { animation-duration: 60s; opacity: 0.5; top: 10%; }
+.wave-slow { animation-duration: 60s; opacity: 0.7; top: 10%; }
 
 @keyframes wave-drift {
   from { transform: translateX(0); }
@@ -852,11 +852,12 @@ p {
 
 .drop {
   position: absolute;
-  background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 100%);
-  width: 1px;
-  height: 90px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.6) 100%);
+  width: 2px; /* 雨滴加寬 */
+  height: 100px;
   top: -100px;
   animation: rain-fall-anim linear infinite;
+  filter: drop-shadow(0 0 2px rgba(255,255,255,0.3)); /* 加入發光感 */
 }
 
 @keyframes rain-fall-anim {
@@ -880,18 +881,18 @@ p {
 /* 4. Sun Pulse (Refined) */
 .sun-overlay {
   position: absolute;
-  top: -15%;
+  top: -20%;
   right: -10%;
-  width: 70%;
-  height: 70%;
-  background: radial-gradient(circle, rgba(251, 191, 36, 0.06) 0%, transparent 70%);
-  filter: blur(80px);
+  width: 80%;
+  height: 80%;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.12) 0%, rgba(251, 191, 36, 0.05) 50%, transparent 80%);
+  filter: blur(60px);
   animation: sun-breathe 10s ease-in-out infinite alternate;
 }
 
 @keyframes sun-breathe {
-  0% { opacity: 0.3; transform: translate(0, 0) scale(1); }
-  100% { opacity: 0.6; transform: translate(-20px, 20px) scale(1.1); }
+  0% { opacity: 0.4; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0.8; transform: translate(-30px, 30px) scale(1.15); }
 }
 
 /* --- End of Atmosphere 2.0 --- */

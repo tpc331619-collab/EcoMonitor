@@ -19,8 +19,8 @@ const AmbienceLayer = ({ type }) => {
       <div className="atmosphere-wave wave-slow" />
       {type === 'rain' && (
         <div className="rain-overlay">
-          {[...Array(25)].map((_, i) => (
-            <div key={`drop-${i}`} className="drop" style={{ left: `${Math.random() * 100}%`, animationDuration: `${0.6 + Math.random() * 0.4}s`, animationDelay: `${Math.random() * 2}s`, opacity: 0.2 + Math.random() * 0.2 }} />
+          {[...Array(45)].map((_, i) => (
+            <div key={`drop-${i}`} className="drop" style={{ left: `${Math.random() * 100}%`, animationDuration: `${0.6 + Math.random() * 0.4}s`, animationDelay: `${Math.random() * 2}s`, opacity: 0.3 + Math.random() * 0.2 }} />
           ))}
           {[...Array(5)].map((_, i) => (
             <div key={`ripple-${i}`} className="ripple" style={{ top: `${Math.random() * 100}%`, left: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 5}s`, width: `${30 + Math.random() * 40}px`, height: `${20 + Math.random() * 30}px` }} />
