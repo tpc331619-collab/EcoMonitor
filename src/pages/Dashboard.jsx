@@ -849,7 +849,24 @@ const Dashboard = () => {
                         const waters = records.filter(r => r.type === 'water');
                         const rains = records.filter(r => r.type === 'rain');
 
-                        const renderValueWithDiff = (val, prevVal, isFirst) => {
+                        const getMaxDiffs = (list) => {
+                          const res = {};
+                          list.forEach((r, i) => {
+                            const prev = list[i+1];
+                            if(!prev) return;
+                            Object.keys(r.readings || {}).forEach(k => {
+                              const d = (Number(r.readings[k])||0) - (Number(prev.readings[k])||0);
+                              if (d > 0.0001 && (res[k] === undefined || d > res[k])) res[k] = d;
+                            });
+                          });
+                          return res;
+                        };
+
+                        const eMax = getMaxDiffs(electrics);
+                        const wMax = getMaxDiffs(waters);
+                        const rMax = getMaxDiffs(rains);
+
+                        const renderValueWithDiff = (val, prevVal, isFirst, key, maxDiffMap) => {
                           const num = Number(val) || 0;
                           if (!isFirst || prevVal === undefined || prevVal === null) return num.toLocaleString();
                           const pNum = Number(prevVal) || 0;
@@ -857,6 +874,7 @@ const Dashboard = () => {
                           
                           let display = '';
                           let color = 'var(--text-muted)';
+                          const isMax = diff > 0 && maxDiffMap && Math.abs(diff - (maxDiffMap[key] || 0)) < 0.0001;
                           
                           if (diff > 0) {
                             display = `+${diff.toLocaleString(undefined, { maximumFractionDigits: 3 })}↑`;
@@ -870,11 +888,28 @@ const Dashboard = () => {
                           }
 
                           return (
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                              <span>{num.toLocaleString()}</span>
-                              <span style={{ fontSize: '0.7rem', color, fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                                {display}
-                              </span>
+                            <div style={{ display: 'flex', justifyContent: 'center' }}>
+                              <div style={{ 
+                                display: 'inline-flex', 
+                                alignItems: 'center', 
+                                gap: '4px',
+                                background: isMax ? '#facc15' : 'transparent',
+                                color: isMax ? '#000' : 'inherit',
+                                borderRadius: '4px',
+                                padding: isMax ? '2px 8px' : '0',
+                                fontWeight: isMax ? '700' : 'inherit',
+                                boxShadow: isMax ? '0 0 10px rgba(250, 204, 21, 0.2)' : 'none'
+                              }}>
+                                <span>{num.toLocaleString()}</span>
+                                <span style={{ 
+                                  fontSize: '0.7rem', 
+                                  color: isMax ? '#c2410c' : color, 
+                                  fontWeight: 'bold', 
+                                  whiteSpace: 'nowrap' 
+                                }}>
+                                  {display}
+                                </span>
+                              </div>
                             </div>
                           );
                         };
@@ -909,14 +944,14 @@ const Dashboard = () => {
                                         return (
                                           <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                             <td style={{ padding: '0.8rem', textAlign: 'center' }}>{format(new Date(r.date), 'MM/dd')}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.ml, prevR?.readings?.ml, true)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.mp1, prevR?.readings?.mp1, true)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.mp, prevR?.readings?.mp, true)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh11, prevR?.readings?.kwh11, true)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh12, prevR?.readings?.kwh12, true)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh13, prevR?.readings?.kwh13, true)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh21, prevR?.readings?.kwh21, true)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.agv, prevR?.readings?.agv, true)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.ml, prevR?.readings?.ml, true, 'ml', eMax)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.mp1, prevR?.readings?.mp1, true, 'mp1', eMax)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.mp, prevR?.readings?.mp, true, 'mp', eMax)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh11, prevR?.readings?.kwh11, true, 'kwh11', eMax)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh12, prevR?.readings?.kwh12, true, 'kwh12', eMax)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh13, prevR?.readings?.kwh13, true, 'kwh13', eMax)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh21, prevR?.readings?.kwh21, true, 'kwh21', eMax)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.agv, prevR?.readings?.agv, true, 'agv', eMax)}</td>
                                             <td style={{ padding: '0.8rem', textAlign: 'right' }}>
                                               <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', marginRight: '10px' }}><Edit2 size={14} /></button>
                                               <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
@@ -952,8 +987,8 @@ const Dashboard = () => {
                                         return (
                                           <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                             <td style={{ padding: '0.8rem', textAlign: 'center' }}>{format(new Date(r.date), 'MM/dd')}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.total, prevR?.readings?.total, true)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.drink, prevR?.readings?.drink, true)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.total, prevR?.readings?.total, true, 'total', wMax)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.drink, prevR?.readings?.drink, true, 'drink', wMax)}</td>
                                             <td style={{ padding: '0.8rem', textAlign: 'right' }}>
                                               <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', marginRight: '10px' }}><Edit2 size={14} /></button>
                                               <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
@@ -988,7 +1023,7 @@ const Dashboard = () => {
                                         return (
                                           <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                             <td style={{ padding: '0.8rem', textAlign: 'center' }}>{format(new Date(r.date), 'MM/dd')}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.rain, prevR?.readings?.rain, true)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.rain, prevR?.readings?.rain, true, 'rain', rMax)}</td>
                                             <td style={{ padding: '0.8rem', textAlign: 'right' }}>
                                               <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', marginRight: '10px' }}><Edit2 size={14} /></button>
                                               <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
