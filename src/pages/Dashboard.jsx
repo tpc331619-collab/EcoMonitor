@@ -4,7 +4,7 @@ import { db } from '../firebase';
 import { doc, getDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { Zap, Droplet, CloudRain, Edit2, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, PenTool, Settings, Calculator, Sparkles, Camera, Cloud, CloudDrizzle, Sun, CloudRain as RainIcon, WifiOff, CloudOff, TrendingUp, TrendingDown, Activity, Calendar, Globe, Leaf, Target, RefreshCw } from 'lucide-react';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, endOfWeek } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, endOfWeek, isSameMonth } from 'date-fns';
 import { toBlob, toPng } from 'html-to-image';
 import DataInputModal from '../components/DataInputModal';
 import EditRecordModal from '../components/EditRecordModal';
@@ -349,7 +349,9 @@ const Dashboard = () => {
   const now = new Date();
   const isCurrentMonth = currentMonthDate.getMonth() === now.getMonth() && currentMonthDate.getFullYear() === now.getFullYear();
   const SundayOfThisWeek = endOfWeek(now, { weekStartsOn: 1 });
-  const benchDays = isCurrentMonth ? Math.min(daysTotal, SundayOfThisWeek.getDate()) : daysTotal;
+  const benchDays = isCurrentMonth 
+    ? (isSameMonth(SundayOfThisWeek, now) ? SundayOfThisWeek.getDate() : daysTotal)
+    : daysTotal;
 
   const eLimit = limits.electric || 1;
   const wLimit = limits.water || 1;
@@ -373,6 +375,14 @@ const Dashboard = () => {
   const getAITip = (type, used, limit) => {
     if (used === 0) return '⚡ 還沒開始記錄喔，等你輸入！';
     if (type === 'rain') {
+      if (weather.icon === 'rain') return <span className="text-water">🌧️ 正降雨中，系統全力回收中！</span>;
+      if (used > (limit || 10)) return <span className="text-success">♻️ 已超越月度目標，回收王是你！</span>;
+      
+      // 降雨量豐沛時的正面提示
+      if (rainStats.amount > 50) {
+        return <span className="text-rain" style={{ fontWeight: 600 }}>🌧️ 降雨量達 {rainStats.amount}mm，可以好好回收利用喔！</span>;
+      }
+
       if (used > 10) return <span className="text-success">♻️ 回收效能優異，讚！</span>;
       return <span className="text-rain" style={{ opacity: 0.8 }}>♻️ 持續穩定回收中...</span>;
     }
