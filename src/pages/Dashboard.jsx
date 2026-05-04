@@ -304,10 +304,11 @@ const Dashboard = () => {
         if (waterRecords.length === 1 && !prevWaterBase && !waterBaseCurrent) w = 0;
       }
 
-      // 雨水計算：優先找上個月最後一筆當基準
+      // 雨水計算：優先本月01號 > 上個月最後一筆 > 本月第一筆
       let rUsage = 0;
       if (rainRecords.length > 0) {
-        const firstRain = prevRainBase || rainRecords[0];
+        const rainBaseCurrent = rainRecords.find(r => format(new Date(r.date), 'dd') === '01');
+        const firstRain = rainBaseCurrent || prevRainBase || rainRecords[0];
         const lastRain = rainRecords[rainRecords.length - 1];
         const maxLastRain = Math.max(...Object.values(lastRain.readings || {}).map(v => Number(v) || 0));
         const minFirstRain = Math.min(...Object.values(firstRain.readings || {}).filter(v => (Number(v) || 0) > 0).map(v => Number(v) || 0));
@@ -741,7 +742,7 @@ const Dashboard = () => {
             </div>
             <div className="metric-value text-rain" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', flexWrap: 'nowrap', gap: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', flexShrink: 1, minWidth: 0 }}>
-                <span style={{ fontSize: '3rem', fontWeight: 800 }}>{Math.round(currentUsage.rain).toLocaleString()}</span>
+                <span style={{ fontSize: '3rem', fontWeight: 800 }}>{parseFloat(currentUsage.rain.toFixed(1)).toLocaleString()}</span>
                 <span className="metric-unit">度</span>
               </div>
               <div style={{ fontSize: '0.8rem', fontWeight: 500, maxWidth: '180px', lineHeight: '1.4', textAlign: 'right', flexShrink: 0 }}>
