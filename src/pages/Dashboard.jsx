@@ -184,19 +184,26 @@ const Dashboard = () => {
         return;
       }
 
-      // 五個請求全部並行
+      // 計算上個月的 year / month，用來抓前月最後一筆當基準
+      const prevMonthDate = subMonths(new Date(currentMonthStr + '-01'), 1);
+      const prevMonthStr = format(prevMonthDate, 'yyyy-MM');
+      const prevYear = prevMonthStr.substring(0, 4);
+
+      // 六個請求全部並行（多一個抓上個月記錄）
       const [
         factorSnap,
         carbonSnap,
         setSnap,
         querySnapshot,
         rainYearSnap,
+        prevMonthSnapshot,
       ] = await Promise.all([
         getDoc(doc(db, 'settings', 'electric_factor')),
         getDoc(doc(db, `settings_${currentYear}`, 'carbon_goals')),
         getDoc(doc(db, `settings_${currentYear}`, `limits_${currentMonthNum}`)),
         getDocs(query(collection(db, `usage_records_${currentYear}`), where('month', '==', currentMonthStr))),
         getDocs(query(collection(db, `usage_records_${currentYear}`), where('type', '==', 'rain'))),
+        getDocs(query(collection(db, `usage_records_${prevYear}`), where('month', '==', prevMonthStr))),
       ]);
 
       // --- 處理 factor ---
@@ -247,6 +254,19 @@ const Dashboard = () => {
         if (d.type === 'rain') rainRecords.push(d);
       });
 
+      // 上個月記錄，排序後取最後一筆（日期最大），作為本月的 fallback 基準
+      const prevElectricArr = [], prevWaterArr = [], prevRainArr = [];
+      prevMonthSnapshot.forEach((docSnap) => {
+        const d = docSnap.data();
+        if (d.type === 'electric') prevElectricArr.push(d);
+        if (d.type === 'water') prevWaterArr.push(d);
+        if (d.type === 'rain') prevRainArr.push(d);
+      });
+      const lastOf = arr => arr.length === 0 ? null : arr.sort((a, b) => new Date(a.date) - new Date(b.date))[arr.length - 1];
+      const prevElectricBase = lastOf(prevElectricArr);
+      const prevWaterBase = lastOf(prevWaterArr);
+      const prevRainBase = lastOf(prevRainArr);
+
       recs.sort((a, b) => new Date(b.date) - new Date(a.date));
       const sortByDateAndCreation = (a, b) => {
         const dateDiff = new Date(a.date) - new Date(b.date);
@@ -257,31 +277,37 @@ const Dashboard = () => {
       waterRecords.sort(sortByDateAndCreation);
       rainRecords.sort(sortByDateAndCreation);
 
+      // 用電計算：優先找01號基準，沒有就找上個月最後一筆，再沒有就用本月第一筆
       let e = 0;
-      const electricBaseRecord = electricRecords.find(r => format(new Date(r.date), 'dd') === '01');
+      const electricBaseCurrent = electricRecords.find(r => format(new Date(r.date), 'dd') === '01');
+      const electricBaseRecord = electricBaseCurrent || (prevElectricBase ? prevElectricBase : electricRecords[0]);
       if (electricBaseRecord && electricRecords.length >= 1) {
         const base = electricBaseRecord.readings;
         const latest = electricRecords[electricRecords.length - 1].readings;
         const totalBase = (base.ml || 0)*1000 + (base.mp1 || 0)*1000 + (base.mp || 0)*1000 + (base.kwh11 || 0) + (base.kwh12 || 0) + (base.kwh13 || 0) + (base.kwh21 || 0) + (base.agv || 0);
         const totalLatest = (latest.ml || 0)*1000 + (latest.mp1 || 0)*1000 + (latest.mp || 0)*1000 + (latest.kwh11 || 0) + (latest.kwh12 || 0) + (latest.kwh13 || 0) + (latest.kwh21 || 0) + (latest.agv || 0);
         e = (totalLatest - totalBase) * loadedMeterFactor + loadedBaseOffset;
-        if (electricRecords.length === 1) e = loadedBaseOffset;
+        // 僅當本月完全沒有歷史基準（只有1筆且無上月資料）才給0
+        if (electricRecords.length === 1 && !prevElectricBase && !electricBaseCurrent) e = loadedBaseOffset;
       }
 
+      // 用水計算：優先找01號基準，沒有就找上個月最後一筆，再沒有就用本月第一筆
       let w = 0;
-      const waterBaseRecord = waterRecords.find(r => format(new Date(r.date), 'dd') === '01');
+      const waterBaseCurrent = waterRecords.find(r => format(new Date(r.date), 'dd') === '01');
+      const waterBaseRecord = waterBaseCurrent || (prevWaterBase ? prevWaterBase : waterRecords[0]);
       if (waterBaseRecord && waterRecords.length >= 1) {
         const base = waterBaseRecord.readings;
         const latest = waterRecords[waterRecords.length - 1].readings;
         const maxLatest = Math.max(...Object.values(latest).map(v => Number(v) || 0));
         const minBase = Math.min(...Object.values(base).filter(v => (Number(v) || 0) > 0).map(v => Number(v) || 0));
         w = maxLatest - minBase;
-        if (waterRecords.length === 1) w = 0;
+        if (waterRecords.length === 1 && !prevWaterBase && !waterBaseCurrent) w = 0;
       }
 
+      // 雨水計算：優先找上個月最後一筆當基準
       let rUsage = 0;
       if (rainRecords.length > 0) {
-        const firstRain = rainRecords[0];
+        const firstRain = prevRainBase || rainRecords[0];
         const lastRain = rainRecords[rainRecords.length - 1];
         const maxLastRain = Math.max(...Object.values(lastRain.readings || {}).map(v => Number(v) || 0));
         const minFirstRain = Math.min(...Object.values(firstRain.readings || {}).filter(v => (Number(v) || 0) > 0).map(v => Number(v) || 0));
