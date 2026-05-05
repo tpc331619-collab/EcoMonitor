@@ -638,7 +638,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {billDiff !== null && (
+            {billDiff !== null && Math.abs(billDiff) > 1 && (
               <div style={{ 
                 fontSize: '0.8rem', 
                 padding: '10px 14px', 
