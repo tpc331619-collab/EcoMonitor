@@ -125,12 +125,15 @@ const FactorSettingModal = ({ isOpen, onClose, currentFactor, currentBaseOffset,
 
       // 校準計算時暫時先用原本邏輯，或可以提示不包含倍率設定
       const calcTotalRaw = (rd) => {
+        // 強制只計算三個總電表的讀值變化
+        const mainFields = ['ml', 'mp1', 'mp'];
         const getFieldRaw = (key) => {
+          if (factors[key] === '0' || factors[key] === 0) return 0;
           const val = Number(rd[key]) || 0;
           const unitMultiplier = (key === 'ml' || key === 'mp1' || key === 'mp') ? 1000 : 1;
           return val * unitMultiplier;
         };
-        return Object.keys(rd).reduce((sum, key) => sum + getFieldRaw(key), 0);
+        return mainFields.reduce((sum, key) => sum + getFieldRaw(key), 0);
       };
       
       const totalFirst = calcTotalRaw(first);
