@@ -13,6 +13,7 @@ const electricityFields = [
   { key: 'kwh13', label: '6. 1-3(Kwh)' },
   { key: 'kwh21', label: '7. 2-1(Kwh)' },
   { key: 'agv', label: '8. AGV(Kwh)' },
+  { key: 'billUsage', label: '⚡ 台電帳單實收度數 (kWh)', isBill: true },
 ];
 
 const waterFields = [
@@ -218,36 +219,56 @@ const DataInputModal = ({ isOpen, onClose, fetchDashboardData, defaultType }) =>
   const handleRainChange = (key, value) => setRainReadings(prev => ({ ...prev, [key]: value }));
 
   const renderField = (f, readings) => {
-    const prevReading = lastRecord?.readings?.[f.key] || 0;
+    const isBill = f.isBill;
+    const prevReading = isBill ? 0 : (lastRecord?.readings?.[f.key] || 0);
     const currentInput = readings[f.key];
     const currentVal = Number(currentInput);
-    const isInvalid = currentInput !== '' && currentVal < prevReading;
+    const isInvalid = !isBill && currentInput !== '' && currentVal < prevReading;
     
     // 即時異常偵測
     const lastFieldUsage = lastFieldUsages[f.key] || 0;
     const currentFieldUsage = currentVal - prevReading;
     const minThreshold = type === 'electric' ? 0.05 : 0.5;
-    const isAnomaly = !isInvalid && currentInput !== '' && currentFieldUsage > (lastFieldUsage * 1.5) && currentFieldUsage > minThreshold;
+    const isAnomaly = !isBill && !isInvalid && currentInput !== '' && currentFieldUsage > (lastFieldUsage * 1.5) && currentFieldUsage > minThreshold;
     
     return (
-      <div className="form-group" style={{ marginBottom: 0 }} key={f.key}>
-        <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '4px', alignItems: 'flex-end', lineHeight: '1.4' }}>
+      <div className="form-group" style={{ 
+        marginBottom: 0, 
+        gridColumn: isBill ? '1 / -1' : 'auto',
+        background: isBill ? 'rgba(99, 102, 241, 0.05)' : 'transparent',
+        padding: isBill ? '10px' : '0',
+        borderRadius: isBill ? '8px' : '0',
+        border: isBill ? '1px dashed rgba(99, 102, 241, 0.3)' : 'none',
+        marginTop: isBill ? '10px' : '0'
+      }} key={f.key}>
+        <label className="form-label" style={{ 
+          fontSize: isBill ? '0.9rem' : '0.8rem', 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          flexWrap: 'wrap', 
+          gap: '4px', 
+          alignItems: 'flex-end', 
+          lineHeight: '1.4',
+          color: isBill ? '#818cf8' : 'inherit',
+          fontWeight: isBill ? 'bold' : 'normal'
+        }}>
           <span>{f.label}</span>
-          {lastRecord && <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', whiteSpace: 'nowrap' }}> (上次: {prevReading})</span>}
+          {!isBill && lastRecord && <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', whiteSpace: 'nowrap' }}> (上次: {prevReading})</span>}
         </label>
         <input 
           type="number" 
           className={`form-control ${isInvalid ? 'border-error' : ''}`} 
           value={currentInput} 
+          placeholder={isBill ? "選填：若本筆為月底紀錄，可填入帳單度數" : ""}
           onChange={e => {
             if (type === 'electric') handleElectricChange(f.key, e.target.value);
             else if (type === 'water') handleWaterChange(f.key, e.target.value);
             else handleRainChange(f.key, e.target.value);
           }}
-          required 
+          required={!isBill}
           min="0" 
           step="any" 
-          style={isInvalid ? { borderColor: 'var(--color-error)', background: 'rgba(239, 68, 68, 0.05)' } : isAnomaly ? { borderColor: 'var(--color-warning)', background: 'rgba(245, 158, 11, 0.05)' } : {}}
+          style={isInvalid ? { borderColor: 'var(--color-error)', background: 'rgba(239, 68, 68, 0.05)' } : isAnomaly ? { borderColor: 'var(--color-warning)', background: 'rgba(245, 158, 11, 0.05)' } : isBill ? { borderColor: 'rgba(99, 102, 241, 0.5)' } : {}}
         />
         {isInvalid && <div style={{ color: 'var(--color-error)', fontSize: '0.65rem', marginTop: '4px' }}>⚠️ 不可低於上次紀錄</div>}
         {isAnomaly && <div style={{ color: 'var(--color-warning)', fontSize: '0.65rem', marginTop: '4px' }}>⚠️ 本次增量較高，請確認</div>}

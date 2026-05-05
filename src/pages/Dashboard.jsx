@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
 import { doc, getDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
-import { Zap, Droplet, CloudRain, Edit2, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, PenTool, Settings, Calculator, Sparkles, Camera, Cloud, CloudDrizzle, Sun, CloudRain as RainIcon, WifiOff, CloudOff, TrendingUp, TrendingDown, Activity, Calendar, Globe, Leaf, Target, RefreshCw } from 'lucide-react';
+import { Zap, Droplet, CloudRain, Edit2, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, PenTool, Settings, Calculator, Sparkles, Camera, Cloud, CloudDrizzle, Sun, CloudRain as RainIcon, WifiOff, CloudOff, TrendingUp, TrendingDown, Activity, Calendar, Globe, Leaf, Target, RefreshCw, Info } from 'lucide-react';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, endOfWeek, isSameMonth } from 'date-fns';
 import { toBlob, toPng } from 'html-to-image';
@@ -46,6 +46,7 @@ const Dashboard = () => {
   const [electricFactor, setElectricFactor] = useState(4.233);
   const [fieldFactors, setFieldFactors] = useState({}); // { ml: 4.233, mp: 1, ... }
   const [electricBaseOffset, setElectricBaseOffset] = useState(0);
+  const [billDiff, setBillDiff] = useState(null);
   const [emissionFactor, setEmissionFactor] = useState(0.495);
   const [emissionHistory, setEmissionHistory] = useState({ '2000-01': 0.495 });
 
@@ -278,6 +279,8 @@ const Dashboard = () => {
       electricRecords.sort(sortByDateAndCreation);
       waterRecords.sort(sortByDateAndCreation);
       rainRecords.sort(sortByDateAndCreation);
+ 
+      const electricFieldsList = ['ml', 'mp1', 'mp', 'kwh11', 'kwh12', 'kwh13', 'kwh21', 'agv'];
 
       // 用電計算：優先找01號基準，沒有就找上個月最後一筆，再沒有就用本月第一筆
       let e = 0;
@@ -295,12 +298,28 @@ const Dashboard = () => {
           return val * unitMultiplier * factor;
         };
 
-        const totalBase = Object.keys(base).reduce((sum, key) => sum + getFieldVal(base, key), 0);
-        const totalLatest = Object.keys(latest).reduce((sum, key) => sum + getFieldVal(latest, key), 0);
+        const totalBase = electricFieldsList.reduce((sum, key) => sum + getFieldVal(base, key), 0);
+        const totalLatest = electricFieldsList.reduce((sum, key) => sum + getFieldVal(latest, key), 0);
         
         e = (totalLatest - totalBase) + loadedBaseOffset;
+        
+        // 帳單比對邏輯
+        const latestRecord = electricRecords[electricRecords.length - 1];
+        if (latestRecord.readings?.billUsage) {
+          const bill = Number(latestRecord.readings.billUsage);
+          setBillDiff(e - bill);
+        } else {
+          setBillDiff(null);
+        }
+
+        // 補償值改為隨日期比例遞增，防止月初出現負值
+        const offsetProportional = loadedBaseOffset * (daysPassed / daysTotal);
+        e = (totalLatest - totalBase) + offsetProportional;
+
         // 僅當本月完全沒有歷史基準（只有1筆且無上月資料）才給0
-        if (electricRecords.length === 1 && !prevElectricBase && !electricBaseCurrent) e = loadedBaseOffset;
+        if (electricRecords.length === 1 && !prevElectricBase && !electricBaseCurrent) e = offsetProportional;
+      } else {
+        setBillDiff(null);
       }
 
       // 用水計算：優先找01號基準，沒有就找上個月最後一筆，再沒有就用本月第一筆
@@ -458,6 +477,23 @@ const Dashboard = () => {
     }
   };
 
+  // 自動校準功能：根據帳單值自動調整 Offset
+  const autoCalibrateOffset = async () => {
+    if (billDiff === null) return;
+    const newOffset = electricBaseOffset - billDiff;
+    try {
+      const { setDoc, doc } = await import('firebase/firestore');
+      await setDoc(doc(db, 'settings', 'electric_factor'), {
+        base_offset: Number(newOffset.toFixed(2))
+      }, { merge: true });
+      showToast(`✅ 已自動校準：補償值已調整為 ${newOffset.toFixed(2)}，誤差已歸零。`);
+      refreshDashboardData();
+    } catch (err) {
+      console.error(err);
+      showToast('❌ 校準失敗', 'error');
+    }
+  };
+
   const handleCopyCardImage = async (ref, title) => {
     if (!ref.current) return;
     try {
@@ -601,6 +637,47 @@ const Dashboard = () => {
                 {getAITip('electric', currentUsage.electric, eLimit)}
               </div>
             </div>
+
+            {billDiff !== null && (
+              <div style={{ 
+                fontSize: '0.8rem', 
+                padding: '10px 14px', 
+                borderRadius: '10px', 
+                background: 'rgba(99, 102, 241, 0.08)', 
+                border: '1px solid rgba(99, 102, 241, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '1rem',
+                animation: 'pulse-subtle 2s infinite'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Info size={14} className="text-electric" />
+                  <span>
+                    與帳單誤差: 
+                    <span style={{ color: Math.abs(billDiff) < 100 ? 'var(--color-success)' : '#fb923c', fontWeight: 'bold', marginLeft: '6px' }}>
+                      {billDiff > 0 ? '+' : ''}{billDiff.toFixed(1)} 度
+                    </span>
+                  </span>
+                </div>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); autoCalibrateOffset(); }}
+                  style={{ 
+                    background: 'var(--color-electric)', 
+                    color: 'var(--bg-dark)', 
+                    border: 'none', 
+                    padding: '4px 10px', 
+                    borderRadius: '6px', 
+                    fontSize: '0.75rem', 
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 8px rgba(251, 191, 36, 0.3)'
+                  }}
+                >
+                  一鍵對齊帳單
+                </button>
+              </div>
+            )}
 
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
               <div style={{ 
