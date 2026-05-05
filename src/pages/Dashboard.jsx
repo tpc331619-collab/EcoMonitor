@@ -877,13 +877,16 @@ const Dashboard = () => {
                         const rains = records.filter(r => r.type === 'rain');
 
                         const getMaxDiffs = (list) => {
+                          // res[key] = { value, idx } — 記錄最大 diff 及其 row index
                           const res = {};
                           list.forEach((r, i) => {
                             const prev = list[i+1];
                             if(!prev) return;
                             Object.keys(r.readings || {}).forEach(k => {
                               const d = (Number(r.readings[k])||0) - (Number(prev.readings[k])||0);
-                              if (d > 0.0001 && (res[k] === undefined || d > res[k])) res[k] = d;
+                              if (d > 0.0001 && (res[k] === undefined || d > res[k].value)) {
+                                res[k] = { value: d, idx: i };
+                              }
                             });
                           });
                           return res;
@@ -893,7 +896,7 @@ const Dashboard = () => {
                         const wMax = getMaxDiffs(waters);
                         const rMax = getMaxDiffs(rains);
 
-                        const renderValueWithDiff = (val, prevVal, isFirst, key, maxDiffMap) => {
+                        const renderValueWithDiff = (val, prevVal, isFirst, key, maxDiffMap, rowIdx) => {
                           const num = Number(val) || 0;
                           if (!isFirst || prevVal === undefined || prevVal === null) return num.toLocaleString();
                           const pNum = Number(prevVal) || 0;
@@ -901,7 +904,9 @@ const Dashboard = () => {
                           
                           let display = '';
                           let color = 'var(--text-muted)';
-                          const isMax = diff > 0 && maxDiffMap && Math.abs(diff - (maxDiffMap[key] || 0)) < 0.0001;
+                          const isMax = diff > 0 && maxDiffMap && maxDiffMap[key] !== undefined &&
+                            Math.abs(diff - maxDiffMap[key].value) < 0.0001 &&
+                            rowIdx === maxDiffMap[key].idx;
                           
                           if (diff > 0) {
                             display = `+${diff.toLocaleString(undefined, { maximumFractionDigits: 3 })}↑`;
@@ -971,14 +976,14 @@ const Dashboard = () => {
                                         return (
                                           <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                             <td style={{ padding: '0.8rem', textAlign: 'center' }}>{format(new Date(r.date), 'MM/dd')}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.ml, prevR?.readings?.ml, true, 'ml', eMax)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.mp1, prevR?.readings?.mp1, true, 'mp1', eMax)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.mp, prevR?.readings?.mp, true, 'mp', eMax)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh11, prevR?.readings?.kwh11, true, 'kwh11', eMax)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh12, prevR?.readings?.kwh12, true, 'kwh12', eMax)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh13, prevR?.readings?.kwh13, true, 'kwh13', eMax)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh21, prevR?.readings?.kwh21, true, 'kwh21', eMax)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.agv, prevR?.readings?.agv, true, 'agv', eMax)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.ml, prevR?.readings?.ml, true, 'ml', eMax, idx)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.mp1, prevR?.readings?.mp1, true, 'mp1', eMax, idx)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.mp, prevR?.readings?.mp, true, 'mp', eMax, idx)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh11, prevR?.readings?.kwh11, true, 'kwh11', eMax, idx)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh12, prevR?.readings?.kwh12, true, 'kwh12', eMax, idx)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh13, prevR?.readings?.kwh13, true, 'kwh13', eMax, idx)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.kwh21, prevR?.readings?.kwh21, true, 'kwh21', eMax, idx)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.agv, prevR?.readings?.agv, true, 'agv', eMax, idx)}</td>
                                             <td style={{ padding: '0.8rem', textAlign: 'right' }}>
                                               <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', marginRight: '10px' }}><Edit2 size={14} /></button>
                                               <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
@@ -1014,8 +1019,8 @@ const Dashboard = () => {
                                         return (
                                           <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                             <td style={{ padding: '0.8rem', textAlign: 'center' }}>{format(new Date(r.date), 'MM/dd')}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.total, prevR?.readings?.total, true, 'total', wMax)}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.drink, prevR?.readings?.drink, true, 'drink', wMax)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.total, prevR?.readings?.total, true, 'total', wMax, idx)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.drink, prevR?.readings?.drink, true, 'drink', wMax, idx)}</td>
                                             <td style={{ padding: '0.8rem', textAlign: 'right' }}>
                                               <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', marginRight: '10px' }}><Edit2 size={14} /></button>
                                               <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
@@ -1050,7 +1055,7 @@ const Dashboard = () => {
                                         return (
                                           <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                             <td style={{ padding: '0.8rem', textAlign: 'center' }}>{format(new Date(r.date), 'MM/dd')}</td>
-                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.rain, prevR?.readings?.rain, true, 'rain', rMax)}</td>
+                                            <td style={{ padding: '0.8rem', textAlign: 'center' }}>{renderValueWithDiff(r.readings?.rain, prevR?.readings?.rain, true, 'rain', rMax, idx)}</td>
                                             <td style={{ padding: '0.8rem', textAlign: 'right' }}>
                                               <button onClick={() => setEditRecordData(r)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', marginRight: '10px' }}><Edit2 size={14} /></button>
                                               <button onClick={() => handleDelete(r.month, r.id)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer' }}><Trash2 size={14} /></button>
