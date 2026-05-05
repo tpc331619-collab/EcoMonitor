@@ -44,6 +44,7 @@ const Dashboard = () => {
   const [carbonGoals, setCarbonGoals] = useState({ reductionTarget: 5, baseYearAvg: 1000 });
   const [records, setRecords] = useState([]);
   const [electricFactor, setElectricFactor] = useState(4.233);
+  const [fieldFactors, setFieldFactors] = useState({}); // { ml: 4.233, mp: 1, ... }
   const [electricBaseOffset, setElectricBaseOffset] = useState(0);
   const [emissionFactor, setEmissionFactor] = useState(0.495);
   const [emissionHistory, setEmissionHistory] = useState({ '2000-01': 0.495 });
@@ -216,6 +217,7 @@ const Dashboard = () => {
         const fdata = factorSnap.data();
         loadedMeterFactor = Number(fdata.meter_factor || fdata.value) || 4.233;
         loadedBaseOffset = Number(fdata.base_offset) || 0;
+        setFieldFactors(fdata.field_factors || {});
         rawHistory = fdata.emission_history || {};
         if (Array.isArray(rawHistory)) {
           const migratedMap = {};
@@ -284,9 +286,19 @@ const Dashboard = () => {
       if (electricBaseRecord && electricRecords.length >= 1) {
         const base = electricBaseRecord.readings;
         const latest = electricRecords[electricRecords.length - 1].readings;
-        const totalBase = (base.ml || 0)*1000 + (base.mp1 || 0)*1000 + (base.mp || 0)*1000 + (base.kwh11 || 0) + (base.kwh12 || 0) + (base.kwh13 || 0) + (base.kwh21 || 0) + (base.agv || 0);
-        const totalLatest = (latest.ml || 0)*1000 + (latest.mp1 || 0)*1000 + (latest.mp || 0)*1000 + (latest.kwh11 || 0) + (latest.kwh12 || 0) + (latest.kwh13 || 0) + (latest.kwh21 || 0) + (latest.agv || 0);
-        e = (totalLatest - totalBase) * loadedMeterFactor + loadedBaseOffset;
+        
+        // 使用各欄位獨立倍率計算，若無設定則使用全域變數
+        const getFieldVal = (rd, key) => {
+          const val = Number(rd[key]) || 0;
+          const factor = fieldFactors[key] !== undefined ? Number(fieldFactors[key]) : loadedMeterFactor;
+          const unitMultiplier = (key === 'ml' || key === 'mp1' || key === 'mp') ? 1000 : 1;
+          return val * unitMultiplier * factor;
+        };
+
+        const totalBase = Object.keys(base).reduce((sum, key) => sum + getFieldVal(base, key), 0);
+        const totalLatest = Object.keys(latest).reduce((sum, key) => sum + getFieldVal(latest, key), 0);
+        
+        e = (totalLatest - totalBase) + loadedBaseOffset;
         // 僅當本月完全沒有歷史基準（只有1筆且無上月資料）才給0
         if (electricRecords.length === 1 && !prevElectricBase && !electricBaseCurrent) e = loadedBaseOffset;
       }
@@ -1081,7 +1093,7 @@ const Dashboard = () => {
 
       <DataInputModal isOpen={isInputModalOpen} onClose={() => setInputModalOpen(false)} fetchDashboardData={refreshDashboardData} defaultType={inputType} />
       <LimitSettingModal isOpen={isLimitModalOpen} onClose={() => setLimitModalOpen(false)} year={currentMonthStr.substring(0, 4)} type={inputType} fetchDashboardData={refreshDashboardData} />
-      <FactorSettingModal isOpen={isFactorModalOpen} onClose={() => setFactorModalOpen(false)} currentFactor={electricFactor} currentBaseOffset={electricBaseOffset} currentEmissionFactor={emissionFactor} emissionHistory={emissionHistory} currentMonthStr={currentMonthStr} carbonGoals={carbonGoals} fetchDashboardData={refreshDashboardData} />
+      <FactorSettingModal isOpen={isFactorModalOpen} onClose={() => setFactorModalOpen(false)} currentFactor={electricFactor} currentBaseOffset={electricBaseOffset} currentEmissionFactor={emissionFactor} emissionHistory={emissionHistory} currentMonthStr={currentMonthStr} carbonGoals={carbonGoals} fieldFactors={fieldFactors} fetchDashboardData={refreshDashboardData} />
       <EditRecordModal isOpen={!!editRecordData} onClose={() => setEditRecordData(null)} record={editRecordData} fetchDashboardData={refreshDashboardData} />
 
       {/* Toast 通知 */}

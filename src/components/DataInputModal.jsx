@@ -43,10 +43,36 @@ const DataInputModal = ({ isOpen, onClose, fetchDashboardData, defaultType }) =>
   const [msg, setMsg] = useState('');
 
   // 輔助計算總量
+  const [factors, setFactors] = useState({});
+  const [globalFactor, setGlobalFactor] = useState(4.233);
+
+  useEffect(() => {
+    const fetchFactors = async () => {
+      try {
+        const { getDoc, doc } = await import('firebase/firestore');
+        const snap = await getDoc(doc(db, 'settings', 'electric_factor'));
+        if (snap.exists()) {
+          const data = snap.data();
+          setFactors(data.field_factors || {});
+          setGlobalFactor(Number(data.meter_factor || data.value) || 4.233);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchFactors();
+  }, []);
+
   const calcTotal = (rd) => {
     if (!rd) return 0;
     if (type === 'electric') {
-      return (rd.ml || 0)*1000 + (rd.mp1 || 0)*1000 + (rd.mp || 0)*1000 + (rd.kwh11 || 0) + (rd.kwh12 || 0) + (rd.kwh13 || 0) + (rd.kwh21 || 0) + (rd.agv || 0);
+      const getFieldVal = (key) => {
+        const val = Number(rd[key]) || 0;
+        const factor = factors[key] !== undefined ? Number(factors[key]) : globalFactor;
+        const unitMultiplier = (key === 'ml' || key === 'mp1' || key === 'mp') ? 1000 : 1;
+        return val * unitMultiplier * factor;
+      };
+      return electricityFields.reduce((sum, f) => sum + getFieldVal(f.key), 0);
     }
     return rd.total || rd.rain || 0;
   };
