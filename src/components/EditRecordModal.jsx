@@ -31,11 +31,12 @@ const EditRecordModal = ({ isOpen, onClose, record, fetchDashboardData }) => {
   const [rainReadings, setRainReadings] = useState({});
   
   const [lastRecord, setLastRecord] = useState(null);
+  const [nextRecord, setNextRecord] = useState(null);
   const [lastFieldUsages, setLastFieldUsages] = useState({});
   const [isFetchingRef, setIsFetchingRef] = useState(false);
   const [msg, setMsg] = useState('');
 
-  // 當選擇的紀錄或日期改變時，抓取「上一筆」參考資料
+  // 當選擇的紀錄或日期改變時，抓取「當月」參考資料
   useEffect(() => {
     const fetchRef = async () => {
       if (!isOpen || !record || !date) return;
@@ -43,35 +44,48 @@ const EditRecordModal = ({ isOpen, onClose, record, fetchDashboardData }) => {
       try {
         const currentDate = new Date(date).toISOString();
         const currentYear = date.substring(0, 4);
+        const currentMonth = date.substring(0, 7);
         
-        // 抓取 5 筆以便找到「本筆紀錄」之前的最後一筆
-        const q1 = query(
+        // 抓取當月所有紀錄
+        const q = query(
           collection(db, `usage_records_${currentYear}`),
           where('type', '==', record.type),
-          where('date', '<=', currentDate),
-          orderBy('date', 'desc'),
-          limit(6) // 多抓一點，因為要排除掉「目前正在修改的這一筆」
+          where('month', '==', currentMonth),
+          orderBy('date', 'asc')
         );
-        const snap1 = await getDocs(q1);
-        let results = snap1.docs.map(d => ({ id: d.id, ...d.data() }));
+        const snap = await getDocs(q);
+        let results = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-        // 排序逻辑 (日期 desc > 存檔時間 desc)
+        // 排序逻辑 (日期 asc > 存檔時間 asc)
         results.sort((a, b) => {
-          const dComp = b.date.localeCompare(a.date);
+          const dComp = a.date.localeCompare(b.date);
           if (dComp !== 0) return dComp;
-          return (b.createdAt || '').localeCompare(a.createdAt || '');
+          return (a.createdAt || '').localeCompare(b.createdAt || '');
         });
 
-        // 排除掉當前正在編輯的這筆 ID，剩下的第一筆就是「上次紀錄」
-        const filtered = results.filter(r => r.id !== record.id);
+        // 排除掉當前正在編輯的這筆 ID
+        const otherRecords = results.filter(r => r.id !== record.id);
         
-        if (filtered.length > 0) {
-          setLastRecord(filtered[0]);
-          
-          // 計算參考增量 (R_last - R_prev)
-          if (filtered.length >= 2) {
-            const r1 = filtered[0].readings;
-            const r2 = filtered[1].readings;
+        let prev = null;
+        let next = null;
+
+        for (let i = 0; i < otherRecords.length; i++) {
+          if (otherRecords[i].date <= currentDate) {
+            prev = otherRecords[i];
+          } else {
+            next = otherRecords[i];
+            break;
+          }
+        }
+
+        setLastRecord(prev);
+        setNextRecord(next);
+        
+        if (prev) {
+          const prevIdx = otherRecords.indexOf(prev);
+          if (prevIdx > 0) {
+            const r1 = prev.readings;
+            const r2 = otherRecords[prevIdx - 1].readings;
             const fDiffs = {};
             for(let k in r1) {
               const d = (r1[k] || 0) - (r2[k] || 0);
@@ -82,7 +96,6 @@ const EditRecordModal = ({ isOpen, onClose, record, fetchDashboardData }) => {
             setLastFieldUsages({});
           }
         } else {
-          setLastRecord(null);
           setLastFieldUsages({});
         }
       } catch (err) {
@@ -148,20 +161,27 @@ const EditRecordModal = ({ isOpen, onClose, record, fetchDashboardData }) => {
   };
 
   const getIsAnyInvalid = () => {
-    if (!lastRecord) return false;
     let readings = record.type === 'electric' ? electricReadings : record.type === 'water' ? waterReadings : rainReadings;
     for (let k in readings) {
-      if (readings[k] !== '' && Number(readings[k]) < (lastRecord.readings?.[k] || 0)) return true;
+      if (readings[k] === '') continue;
+      const val = Number(readings[k]);
+      if (lastRecord && val < (lastRecord.readings?.[k] || 0)) return { key: k, type: 'lower' };
+      if (nextRecord && val > (nextRecord.readings?.[k] || 0)) return { key: k, type: 'upper' };
     }
-    return false;
+    return null;
   };
-  const isAnyInvalid = getIsAnyInvalid();
+  const invalidInfo = getIsAnyInvalid();
+  const isAnyInvalid = !!invalidInfo;
 
   const renderField = (f, readings) => {
     const prevReading = lastRecord?.readings?.[f.key] || 0;
+    const nextReading = nextRecord?.readings?.[f.key] || Infinity;
     const currentInput = readings[f.key];
     const currentVal = Number(currentInput);
-    const isInvalid = currentInput !== '' && currentVal < prevReading;
+    
+    const isLowerInvalid = currentInput !== '' && currentVal < prevReading;
+    const isUpperInvalid = currentInput !== '' && currentVal > nextReading;
+    const isInvalid = isLowerInvalid || isUpperInvalid;
     
     // 即時異常偵測
     const lastUsage = lastFieldUsages[f.key] || 0;
@@ -173,7 +193,13 @@ const EditRecordModal = ({ isOpen, onClose, record, fetchDashboardData }) => {
       <div className="form-group" style={{ marginBottom: 0 }} key={f.key}>
         <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
           {f.label} 
-          {lastRecord && <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}> (上次: {prevReading})</span>}
+          {(lastRecord || nextRecord) && (
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>
+              {lastRecord && `(前: ${prevReading})`}
+              {lastRecord && nextRecord && ' ~ '}
+              {nextRecord && `(後: ${nextReading})`}
+            </span>
+          )}
         </label>
         <input 
           type="number" 
@@ -185,7 +211,8 @@ const EditRecordModal = ({ isOpen, onClose, record, fetchDashboardData }) => {
           step="any" 
           style={isInvalid ? { borderColor: 'var(--color-error)', background: 'rgba(239, 68, 68, 0.05)' } : isAnomaly ? { borderColor: 'var(--color-warning)', background: 'rgba(245, 158, 11, 0.05)' } : {}}
         />
-        {isInvalid && <div style={{ color: 'var(--color-error)', fontSize: '0.65rem', marginTop: '4px' }}>⚠️ 不可低於上次紀錄</div>}
+        {isLowerInvalid && <div style={{ color: 'var(--color-error)', fontSize: '0.65rem', marginTop: '4px' }}>⚠️ 不可低於前次紀錄 ({prevReading})</div>}
+        {isUpperInvalid && <div style={{ color: 'var(--color-error)', fontSize: '0.65rem', marginTop: '4px' }}>⚠️ 不可高於後續紀錄 ({nextReading})</div>}
         {isAnomaly && <div style={{ color: 'var(--color-warning)', fontSize: '0.65rem', marginTop: '4px' }}>⚠️ 修正後增量異常，請確認</div>}
       </div>
     );
@@ -228,7 +255,7 @@ const EditRecordModal = ({ isOpen, onClose, record, fetchDashboardData }) => {
             disabled={isFetchingRef || isAnyInvalid}
           >
             {isFetchingRef ? <RefreshCw className="spinner" size={18} /> : <Save size={18} />} 
-            {isFetchingRef ? '正在比對歷史數據...' : isAnyInvalid ? '數據輸入有誤' : '儲存變更'}
+            {isFetchingRef ? '正在比對歷史數據...' : invalidInfo?.type === 'lower' ? '數據不可低於前次' : invalidInfo?.type === 'upper' ? '數據不可高於後續' : '儲存變更'}
           </button>
         </form>
         {msg && <div style={{ marginTop: '1rem', color: msg.includes('成功') ? 'var(--color-success)' : 'var(--color-error)', textAlign: 'center', fontWeight: 'bold' }}>{msg}</div>}

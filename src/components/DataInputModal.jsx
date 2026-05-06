@@ -38,8 +38,9 @@ const DataInputModal = ({ isOpen, onClose, fetchDashboardData, defaultType }) =>
   const [rainReadings, setRainReadings] = useState(initRainState);
   
   const [lastRecord, setLastRecord] = useState(null);
-  const [lastFieldUsages, setLastFieldUsages] = useState({}); // 儲存上一筆的增量 (R1 - R2)
-  const [lastTotalUsage, setLastTotalUsage] = useState(0);    // 儲存上一筆的總增量
+  const [nextRecord, setNextRecord] = useState(null); // 新增：月內下一筆
+  const [lastFieldUsages, setLastFieldUsages] = useState({});
+  const [lastTotalUsage, setLastTotalUsage] = useState(0);
   const [isFetchingRef, setIsFetchingRef] = useState(false);
   const [msg, setMsg] = useState('');
 
@@ -78,18 +79,23 @@ const DataInputModal = ({ isOpen, onClose, fetchDashboardData, defaultType }) =>
     return rd.total || rd.rain || 0;
   };
 
-  // 判斷是否任何欄位無效 (小於上次)
+  // 判斷是否任何欄位無效 (小於當月前一筆 或 大於當月後一筆)
   const getIsAnyInvalid = () => {
-    if (!lastRecord) return false;
     const readings = type === 'electric' ? electricReadings : type === 'water' ? waterReadings : rainReadings;
     for (let k in readings) {
-      if (readings[k] !== '' && Number(readings[k]) < (lastRecord.readings?.[k] || 0)) return true;
+      if (readings[k] === '') continue;
+      const val = Number(readings[k]);
+      // 下限檢查 (當月前一筆)
+      if (lastRecord && val < (lastRecord.readings?.[k] || 0)) return { key: k, type: 'lower' };
+      // 上限檢查 (當月後一筆)
+      if (nextRecord && val > (nextRecord.readings?.[k] || 0)) return { key: k, type: 'upper' };
     }
-    return false;
+    return null;
   };
-  const isAnyInvalid = getIsAnyInvalid();
+  const invalidInfo = getIsAnyInvalid();
+  const isAnyInvalid = !!invalidInfo;
 
-  // 獲取參考資料 (尋找最近的紀錄，包含同日)
+  // 獲取參考資料 (尋找當月最近的紀錄)
   useEffect(() => {
     const fetchRef = async () => {
       if (!isOpen) return;
@@ -97,46 +103,48 @@ const DataInputModal = ({ isOpen, onClose, fetchDashboardData, defaultType }) =>
       try {
         const currentDate = new Date(date).toISOString();
         const currentYear = date.substring(0, 4);
-        let results = [];
+        const currentMonth = date.substring(0, 7);
 
-        // 1. 抓取當前日期及之前的紀錄 (抓 5 筆以便在 JS 做排序)
-        const q1 = query(
+        // 僅抓取「當月」的紀錄作為上下限參考
+        const q = query(
           collection(db, `usage_records_${currentYear}`),
           where('type', '==', type),
-          where('date', '<=', currentDate),
-          orderBy('date', 'desc'),
-          limit(5)
+          where('month', '==', currentMonth),
+          orderBy('date', 'asc')
         );
-        const snap1 = await getDocs(q1);
-        results = snap1.docs.map(d => ({ id: d.id, ...d.data() }));
+        
+        const snap = await getDocs(q);
+        let results = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-        // 2. 如果不足，往上一年抓
-        if (results.length < 5) {
-          const prevYear = parseInt(currentYear) - 1;
-          const q2 = query(
-            collection(db, `usage_records_${prevYear}`),
-            where('type', '==', type),
-            orderBy('date', 'desc'),
-            limit(5 - results.length)
-          );
-          const snap2 = await getDocs(q2);
-          const prevYearRecs = snap2.docs.map(d => ({ id: d.id, ...d.data() }));
-          results = [...results, ...prevYearRecs];
+        // 排序：日期 asc > 存檔時間 asc
+        results.sort((a, b) => {
+           const dateCompare = a.date.localeCompare(b.date);
+           if (dateCompare !== 0) return dateCompare;
+           return (a.createdAt || '').localeCompare(b.createdAt || '');
+        });
+
+        // 找出「前一筆」與「後一筆」
+        let prev = null;
+        let next = null;
+        
+        for (let i = 0; i < results.length; i++) {
+          if (results[i].date <= currentDate) {
+            prev = results[i];
+          } else {
+            next = results[i];
+            break;
+          }
         }
 
-        if (results.length > 0) {
-          // 在 JS 中進行精準排序：日期 desc > 存檔時間 (createdAt) desc > ID desc
-          results.sort((a, b) => {
-             const dateCompare = b.date.localeCompare(a.date);
-             if (dateCompare !== 0) return dateCompare;
-             return (b.createdAt || '').localeCompare(a.createdAt || '');
-          });
-
-          setLastRecord(results[0]);
-          
-          if (results.length >= 2) {
-            const r1 = results[0].readings;
-            const r2 = results[1].readings;
+        setLastRecord(prev);
+        setNextRecord(next);
+        
+        if (prev) {
+          // 為了計算建議增量，我們可能還需要 prev 的 prev
+          const prevIdx = results.indexOf(prev);
+          if (prevIdx > 0) {
+            const r1 = prev.readings;
+            const r2 = results[prevIdx - 1].readings;
             setLastTotalUsage(calcTotal(r1) - calcTotal(r2));
             const fDiffs = {};
             for(let k in r1) {
@@ -149,7 +157,6 @@ const DataInputModal = ({ isOpen, onClose, fetchDashboardData, defaultType }) =>
             setLastFieldUsages({});
           }
         } else {
-          setLastRecord(null);
           setLastTotalUsage(0);
           setLastFieldUsages({});
         }
@@ -221,9 +228,13 @@ const DataInputModal = ({ isOpen, onClose, fetchDashboardData, defaultType }) =>
   const renderField = (f, readings) => {
     const isBill = f.isBill;
     const prevReading = isBill ? 0 : (lastRecord?.readings?.[f.key] || 0);
+    const nextReading = isBill ? Infinity : (nextRecord?.readings?.[f.key] || Infinity);
     const currentInput = readings[f.key];
     const currentVal = Number(currentInput);
-    const isInvalid = !isBill && currentInput !== '' && currentVal < prevReading;
+    
+    const isLowerInvalid = !isBill && currentInput !== '' && currentVal < prevReading;
+    const isUpperInvalid = !isBill && currentInput !== '' && currentVal > nextReading;
+    const isInvalid = isLowerInvalid || isUpperInvalid;
     
     // 即時異常偵測
     const lastFieldUsage = lastFieldUsages[f.key] || 0;
@@ -253,7 +264,13 @@ const DataInputModal = ({ isOpen, onClose, fetchDashboardData, defaultType }) =>
           fontWeight: isBill ? 'bold' : 'normal'
         }}>
           <span>{f.label}</span>
-          {!isBill && lastRecord && <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', whiteSpace: 'nowrap' }}> (上次: {prevReading})</span>}
+          {!isBill && (lastRecord || nextRecord) && (
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', whiteSpace: 'nowrap' }}>
+              {lastRecord && `(前: ${prevReading})`}
+              {lastRecord && nextRecord && ' ~ '}
+              {nextRecord && `(後: ${nextReading})`}
+            </span>
+          )}
         </label>
         <input 
           type="number" 
@@ -270,7 +287,8 @@ const DataInputModal = ({ isOpen, onClose, fetchDashboardData, defaultType }) =>
           step="any" 
           style={isInvalid ? { borderColor: 'var(--color-error)', background: 'rgba(239, 68, 68, 0.05)' } : isAnomaly ? { borderColor: 'var(--color-warning)', background: 'rgba(245, 158, 11, 0.05)' } : isBill ? { borderColor: 'rgba(99, 102, 241, 0.5)' } : {}}
         />
-        {isInvalid && <div style={{ color: 'var(--color-error)', fontSize: '0.65rem', marginTop: '4px' }}>⚠️ 不可低於上次紀錄</div>}
+        {isLowerInvalid && <div style={{ color: 'var(--color-error)', fontSize: '0.65rem', marginTop: '4px' }}>⚠️ 不可低於前次紀錄 ({prevReading})</div>}
+        {isUpperInvalid && <div style={{ color: 'var(--color-error)', fontSize: '0.65rem', marginTop: '4px' }}>⚠️ 不可高於後續紀錄 ({nextReading})</div>}
         {isAnomaly && <div style={{ color: 'var(--color-warning)', fontSize: '0.65rem', marginTop: '4px' }}>⚠️ 本次增量較高，請確認</div>}
       </div>
     );
@@ -315,7 +333,7 @@ const DataInputModal = ({ isOpen, onClose, fetchDashboardData, defaultType }) =>
             disabled={isFetchingRef || isAnyInvalid}
           >
             {isFetchingRef ? <RefreshCw className="spinner" size={18} /> : <Plus size={18} />} 
-            {isFetchingRef ? '正在檢查歷史數據...' : isAnyInvalid ? '數據輸入有誤 (不可低於上次)' : '確認新增存檔'}
+            {isFetchingRef ? '正在檢查歷史數據...' : invalidInfo?.type === 'lower' ? '數據不可低於前次' : invalidInfo?.type === 'upper' ? '數據不可高於後續' : '確認新增存檔'}
           </button>
         </form>
 
