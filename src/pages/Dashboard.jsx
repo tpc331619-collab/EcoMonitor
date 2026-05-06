@@ -49,6 +49,7 @@ const Dashboard = () => {
   const [billDiff, setBillDiff] = useState(null);
   const [emissionFactor, setEmissionFactor] = useState(0.495);
   const [emissionHistory, setEmissionHistory] = useState({ '2000-01': 0.495 });
+  const [factorHistory, setFactorHistory] = useState({}); // { 'yyyy-MM': { meter_factor, base_offset, field_factors } }
 
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
@@ -213,18 +214,33 @@ const Dashboard = () => {
       let loadedBaseOffset = 0;
       let rawHistory = { '2000-01': 0.495 };
       let activeEmissionFactor = 0.495;
+      let rawFactorHistory = {};
 
       if (factorSnap.exists()) {
         const fdata = factorSnap.data();
-        loadedMeterFactor = Number(fdata.meter_factor || fdata.value) || 4.233;
-        loadedBaseOffset = Number(fdata.base_offset) || 0;
-        setFieldFactors(fdata.field_factors || {});
+        
+        // 歷史軌跡邏輯 (適用於 CT, Offset, FieldFactors, Emission)
+        rawFactorHistory = fdata.factor_history || {};
         rawHistory = fdata.emission_history || {};
-        if (Array.isArray(rawHistory)) {
-          const migratedMap = {};
-          rawHistory.forEach(h => { if (h.startMonth) migratedMap[h.startMonth] = h.value; });
-          rawHistory = migratedMap;
+
+        // 遷移舊資料 (如果尚未在 history 中)
+        if (Object.keys(rawFactorHistory).length === 0) {
+          rawFactorHistory['2000-01'] = {
+            meter_factor: Number(fdata.meter_factor || fdata.value) || 4.233,
+            base_offset: Number(fdata.base_offset) || 0,
+            field_factors: fdata.field_factors || {}
+          };
         }
+
+        // 找出適用於當前月份的設定
+        const sortedFactorMonths = Object.keys(rawFactorHistory).sort((a, b) => b.localeCompare(a));
+        const activeFactorMonth = sortedFactorMonths.find(m => m <= currentMonthStr) || sortedFactorMonths[sortedFactorMonths.length - 1];
+        const activeConfig = rawFactorHistory[activeFactorMonth] || rawFactorHistory['2000-01'];
+
+        loadedMeterFactor = Number(activeConfig.meter_factor) || 4.233;
+        loadedBaseOffset = Number(activeConfig.base_offset) || 0;
+        setFieldFactors(activeConfig.field_factors || {});
+
         const sortedMonths = Object.keys(rawHistory).sort((a, b) => b.localeCompare(a));
         const activeMonth = sortedMonths.find(m => m <= currentMonthStr) || sortedMonths[sortedMonths.length - 1];
         activeEmissionFactor = rawHistory[activeMonth] || 0.495;
@@ -233,6 +249,7 @@ const Dashboard = () => {
       setElectricBaseOffset(loadedBaseOffset);
       setEmissionHistory(rawHistory);
       setEmissionFactor(activeEmissionFactor);
+      setFactorHistory(rawFactorHistory);
 
       // --- 處理 carbon goals ---
       const loadedCarbonGoals = carbonSnap.exists() ? carbonSnap.data() : { reductionTarget: 5, baseYearAvg: 1000 };
@@ -366,7 +383,8 @@ const Dashboard = () => {
         baseOffset: loadedBaseOffset,
         emissionHistory: rawHistory,
         emissionFactor: activeEmissionFactor,
-        rainStats: rainStats, // 此時的 rainStats 可能尚未更新，fetchRainHistoryData 會在 useEffect 呼叫
+        factorHistory: rawFactorHistory,
+        rainStats: rainStats,
       };
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -483,8 +501,19 @@ const Dashboard = () => {
     const newOffset = electricBaseOffset - billDiff;
     try {
       const { setDoc, doc } = await import('firebase/firestore');
-      await setDoc(doc(db, 'settings', 'electric_factor'), {
+      const newFactorHistory = { ...factorHistory };
+      const currentConfig = newFactorHistory[currentMonthStr] || { 
+        meter_factor: electricFactor, 
+        base_offset: electricBaseOffset, 
+        field_factors: fieldFactors 
+      };
+      newFactorHistory[currentMonthStr] = {
+        ...currentConfig,
         base_offset: Number(newOffset.toFixed(2))
+      };
+
+      await setDoc(doc(db, 'settings', 'electric_factor'), {
+        factor_history: newFactorHistory
       }, { merge: true });
       showToast(`✅ 已自動校準：補償值已調整為 ${newOffset.toFixed(2)}，誤差已歸零。`);
       refreshDashboardData();
@@ -1170,7 +1199,11 @@ const Dashboard = () => {
 
       <DataInputModal isOpen={isInputModalOpen} onClose={() => setInputModalOpen(false)} fetchDashboardData={refreshDashboardData} defaultType={inputType} />
       <LimitSettingModal isOpen={isLimitModalOpen} onClose={() => setLimitModalOpen(false)} year={currentMonthStr.substring(0, 4)} type={inputType} fetchDashboardData={refreshDashboardData} />
-      <FactorSettingModal isOpen={isFactorModalOpen} onClose={() => setFactorModalOpen(false)} currentFactor={electricFactor} currentBaseOffset={electricBaseOffset} currentEmissionFactor={emissionFactor} emissionHistory={emissionHistory} currentMonthStr={currentMonthStr} carbonGoals={carbonGoals} fieldFactors={fieldFactors} fetchDashboardData={refreshDashboardData} />
+      <FactorSettingModal isOpen={isFactorModalOpen} onClose={() => setFactorModalOpen(false)} currentFactor={electricFactor} currentBaseOffset={electricBaseOffset} currentEmissionFactor={emissionFactor}
+          emissionHistory={emissionHistory}
+          factorHistory={factorHistory}
+          currentMonthStr={currentMonthStr}
+ carbonGoals={carbonGoals} fieldFactors={fieldFactors} fetchDashboardData={refreshDashboardData} />
       <EditRecordModal isOpen={!!editRecordData} onClose={() => setEditRecordData(null)} record={editRecordData} fetchDashboardData={refreshDashboardData} />
 
       {/* Toast 通知 */}

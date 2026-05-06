@@ -14,7 +14,7 @@ const electricityFields = [
   { key: 'agv', label: '8. AGV(Kwh)' },
 ];
 
-const FactorSettingModal = ({ isOpen, onClose, currentFactor, currentBaseOffset, currentEmissionFactor, emissionHistory, currentMonthStr, carbonGoals, fieldFactors, fetchDashboardData }) => {
+const FactorSettingModal = ({ isOpen, onClose, currentFactor, currentBaseOffset, currentEmissionFactor, emissionHistory, factorHistory, currentMonthStr, carbonGoals, fieldFactors, fetchDashboardData }) => {
   const [meterFactor, setMeterFactor] = useState(currentFactor);
   const [baseOffset, setBaseOffset] = useState(currentBaseOffset || 0);
   const [eFactor, setEFactor] = useState(currentEmissionFactor);
@@ -57,10 +57,19 @@ const FactorSettingModal = ({ isOpen, onClose, currentFactor, currentBaseOffset,
       const newHistory = { ...(emissionHistory || {}) };
       newHistory[currentMonthStr] = Number(eFactor);
 
-      await setDoc(doc(db, 'settings', 'electric_factor'), {
+      const newFactorHistory = { ...(factorHistory || {}) };
+      newFactorHistory[currentMonthStr] = {
         meter_factor: Number(meterFactor),
         base_offset: Number(baseOffset),
+        field_factors: factors
+      };
+
+      await setDoc(doc(db, 'settings', 'electric_factor'), {
         emission_history: newHistory,
+        factor_history: newFactorHistory,
+        // 保留舊欄位作為 fallback
+        meter_factor: Number(meterFactor),
+        base_offset: Number(baseOffset),
         field_factors: factors,
         value: Number(meterFactor)
       });
@@ -155,7 +164,7 @@ const FactorSettingModal = ({ isOpen, onClose, currentFactor, currentBaseOffset,
         } else {
             const factor = adjustedBill / delta;
             setRawDelta(delta);
-            setSuggestedFactor(factor.toFixed(6));
+            setSuggestedFactor(factor.toFixed(2)); // 四捨五入到小數點 2 位
             setMsg(`✅ 區間校準運算完成！(已扣除 ${totalOffset} 總補償)`);
         }
       }
@@ -201,7 +210,8 @@ const FactorSettingModal = ({ isOpen, onClose, currentFactor, currentBaseOffset,
               <Sparkles size={16} /> 台電帳單校準助手 (多月區間)
             </h3>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.8rem', lineHeight: 1.4 }}>
-              選取連續月份並輸入其帳單總度數。系統會扣除固定補償值後計算建議變數。
+              公式: CT = (台電實收度數 - 總補償值) / (本期系統讀值 - 上期系統讀值)<br />
+              系統會自動根據區間計算總補償值，並將結果四捨五入至小數點後 2 位。
             </p>
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.6rem', marginBottom: '0.8rem' }}>
