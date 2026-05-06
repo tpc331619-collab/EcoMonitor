@@ -42,29 +42,21 @@ const EditRecordModal = ({ isOpen, onClose, record, fetchDashboardData }) => {
       if (!isOpen || !record || !date) return;
       setIsFetchingRef(true);
       try {
-        const currentDate = new Date(date).toISOString();
         const currentYear = date.substring(0, 4);
-        const currentMonth = date.substring(0, 7);
+        const currentMonth = date.substring(0, 7).replace(/\//g, '-');
+        const currentDate = new Date(date).toISOString();
         
-        // 抓取當月所有紀錄
         const q = query(
           collection(db, `usage_records_${currentYear}`),
-          where('type', '==', record.type),
-          where('month', '==', currentMonth),
-          orderBy('date', 'asc')
+          where('type', '==', record.type)
         );
         const snap = await getDocs(q);
         let results = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-        // 排序逻辑 (日期 asc > 存檔時間 asc)
-        results.sort((a, b) => {
-          const dComp = a.date.localeCompare(b.date);
-          if (dComp !== 0) return dComp;
-          return (a.createdAt || '').localeCompare(b.createdAt || '');
-        });
+        results.sort((a, b) => a.date.localeCompare(b.date));
 
-        // 排除掉當前正在編輯的這筆 ID
-        const otherRecords = results.filter(r => r.id !== record.id);
+        const monthRecords = results.filter(r => (r.month || '').replace(/\//g, '-') === currentMonth);
+        const otherRecords = monthRecords.filter(r => r.id !== record.id);
         
         let prev = null;
         let next = null;
@@ -83,12 +75,13 @@ const EditRecordModal = ({ isOpen, onClose, record, fetchDashboardData }) => {
         
         if (prev) {
           const prevIdx = otherRecords.indexOf(prev);
-          if (prevIdx > 0) {
+          const pOfP = otherRecords[prevIdx - 1]; 
+          if (pOfP) {
             const r1 = prev.readings;
-            const r2 = otherRecords[prevIdx - 1].readings;
+            const r2 = pOfP.readings;
             const fDiffs = {};
             for(let k in r1) {
-              const d = (r1[k] || 0) - (r2[k] || 0);
+              const d = (Number(r1[k]) || 0) - (Number(r2[k]) || 0);
               if (d > 0) fDiffs[k] = d;
             }
             setLastFieldUsages(fDiffs);
@@ -191,15 +184,23 @@ const EditRecordModal = ({ isOpen, onClose, record, fetchDashboardData }) => {
 
     return (
       <div className="form-group" style={{ marginBottom: 0 }} key={f.key}>
-        <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
-          {f.label} 
+        <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>{f.label}</span>
+            {currentInput !== '' && !isInvalid && (
+              <span className={isAnomaly ? 'text-warning' : 'text-success'} style={{ fontSize: '0.75rem', fontWeight: 'bold', background: isAnomaly ? 'rgba(245, 158, 11, 0.1)' : 'rgba(34, 197, 94, 0.1)', padding: '1px 6px', borderRadius: '4px' }}>
+                +{currentUsage.toFixed(3)}
+              </span>
+            )}
+          </div>
           {(lastRecord || nextRecord) && (
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>
+            <span style={{ color: '#fbbf24', fontSize: '0.75rem', fontWeight: 'bold', background: 'rgba(251, 191, 36, 0.1)', padding: '1px 6px', borderRadius: '4px' }}>
               {lastRecord && `(前: ${prevReading})`}
               {lastRecord && nextRecord && ' ~ '}
               {nextRecord && `(後: ${nextReading})`}
             </span>
           )}
+          {isFetchingRef && <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>🔍 正在同步...</span>}
         </label>
         <input 
           type="number" 

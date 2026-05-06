@@ -13,7 +13,6 @@ const electricityFields = [
   { key: 'kwh13', label: '6. 1-3(Kwh)' },
   { key: 'kwh21', label: '7. 2-1(Kwh)' },
   { key: 'agv', label: '8. AGV(Kwh)' },
-  { key: 'billUsage', label: '⚡ 台電帳單實收度數 (kWh)', isBill: true },
 ];
 
 const waterFields = [
@@ -38,13 +37,12 @@ const DataInputModal = ({ isOpen, onClose, fetchDashboardData, defaultType }) =>
   const [rainReadings, setRainReadings] = useState(initRainState);
   
   const [lastRecord, setLastRecord] = useState(null);
-  const [nextRecord, setNextRecord] = useState(null); // 新增：月內下一筆
+  const [nextRecord, setNextRecord] = useState(null);
   const [lastFieldUsages, setLastFieldUsages] = useState({});
   const [lastTotalUsage, setLastTotalUsage] = useState(0);
   const [isFetchingRef, setIsFetchingRef] = useState(false);
   const [msg, setMsg] = useState('');
 
-  // 輔助計算總量
   const [factors, setFactors] = useState({});
   const [globalFactor, setGlobalFactor] = useState(4.233);
 
@@ -79,16 +77,13 @@ const DataInputModal = ({ isOpen, onClose, fetchDashboardData, defaultType }) =>
     return rd.total || rd.rain || 0;
   };
 
-  // 判斷是否任何欄位無效 (小於當月前一筆 或 大於當月後一筆)
   const getIsAnyInvalid = () => {
     const readings = type === 'electric' ? electricReadings : type === 'water' ? waterReadings : rainReadings;
     for (let k in readings) {
       if (readings[k] === '') continue;
       const val = Number(readings[k]);
-      // 下限檢查 (當月前一筆)
       if (lastRecord && val < (lastRecord.readings?.[k] || 0)) return { key: k, type: 'lower' };
-      // 上限檢查 (當月後一筆)
-      if (nextRecord && val > (nextRecord.readings?.[k] || 0)) return { key: k, type: 'upper' };
+      if (nextRecord && val > (nextRecord.readings?.[k] || Infinity)) return { key: k, type: 'upper' };
     }
     return null;
   };
@@ -101,37 +96,34 @@ const DataInputModal = ({ isOpen, onClose, fetchDashboardData, defaultType }) =>
       if (!isOpen) return;
       setIsFetchingRef(true);
       try {
-        const currentDate = new Date(date).toISOString();
         const currentYear = date.substring(0, 4);
-        const currentMonth = date.substring(0, 7);
+        const currentMonth = date.substring(0, 7).replace(/\//g, '-');
+        const currentDate = new Date(date).toISOString();
 
-        // 僅抓取「當月」的紀錄作為上下限參考
+        // 抓取當年度該類別的所有紀錄 (避免 Index 問題)
         const q = query(
           collection(db, `usage_records_${currentYear}`),
-          where('type', '==', type),
-          where('month', '==', currentMonth),
-          orderBy('date', 'asc')
+          where('type', '==', type)
         );
         
         const snap = await getDocs(q);
         let results = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-        // 排序：日期 asc > 存檔時間 asc
-        results.sort((a, b) => {
-           const dateCompare = a.date.localeCompare(b.date);
-           if (dateCompare !== 0) return dateCompare;
-           return (a.createdAt || '').localeCompare(b.createdAt || '');
-        });
+        // 排序：日期 asc
+        results.sort((a, b) => a.date.localeCompare(b.date));
+
+        // 過濾出「當月」的紀錄
+        const monthRecords = results.filter(r => (r.month || '').replace(/\//g, '-') === currentMonth);
 
         // 找出「前一筆」與「後一筆」
         let prev = null;
         let next = null;
         
-        for (let i = 0; i < results.length; i++) {
-          if (results[i].date <= currentDate) {
-            prev = results[i];
+        for (let i = 0; i < monthRecords.length; i++) {
+          if (monthRecords[i].date <= currentDate) {
+            prev = monthRecords[i];
           } else {
-            next = results[i];
+            next = monthRecords[i];
             break;
           }
         }
@@ -140,15 +132,14 @@ const DataInputModal = ({ isOpen, onClose, fetchDashboardData, defaultType }) =>
         setNextRecord(next);
         
         if (prev) {
-          // 為了計算建議增量，我們可能還需要 prev 的 prev
-          const prevIdx = results.indexOf(prev);
+          const prevIdx = monthRecords.indexOf(prev);
           if (prevIdx > 0) {
             const r1 = prev.readings;
-            const r2 = results[prevIdx - 1].readings;
+            const r2 = monthRecords[prevIdx - 1].readings;
             setLastTotalUsage(calcTotal(r1) - calcTotal(r2));
             const fDiffs = {};
             for(let k in r1) {
-              const d = (r1[k] || 0) - (r2[k] || 0);
+              const d = (Number(r1[k]) || 0) - (Number(r2[k]) || 0);
               if (d > 0) fDiffs[k] = d;
             }
             setLastFieldUsages(fDiffs);
@@ -263,14 +254,22 @@ const DataInputModal = ({ isOpen, onClose, fetchDashboardData, defaultType }) =>
           color: isBill ? '#818cf8' : 'inherit',
           fontWeight: isBill ? 'bold' : 'normal'
         }}>
-          <span>{f.label}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>{f.label}</span>
+            {currentInput !== '' && !isInvalid && !isBill && (
+              <span className={isAnomaly ? 'text-warning' : 'text-success'} style={{ fontSize: '0.75rem', fontWeight: 'bold', background: isAnomaly ? 'rgba(245, 158, 11, 0.1)' : 'rgba(34, 197, 94, 0.1)', padding: '1px 6px', borderRadius: '4px' }}>
+                +{currentFieldUsage.toFixed(3)}
+              </span>
+            )}
+          </div>
           {!isBill && (lastRecord || nextRecord) && (
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', whiteSpace: 'nowrap' }}>
+            <span style={{ color: '#fbbf24', fontSize: '0.75rem', whiteSpace: 'nowrap', fontWeight: 'bold', background: 'rgba(251, 191, 36, 0.1)', padding: '1px 6px', borderRadius: '4px' }}>
               {lastRecord && `(前: ${prevReading})`}
               {lastRecord && nextRecord && ' ~ '}
               {nextRecord && `(後: ${nextReading})`}
             </span>
           )}
+          {isFetchingRef && <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>🔍 正在同步...</span>}
         </label>
         <input 
           type="number" 
